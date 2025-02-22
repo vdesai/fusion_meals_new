@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.email-sender {
+  padding: 20px;
+  border-radius: 10px;
+  background-color: #f0f8ff;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.input-field {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.send-btn {
+  margin-top: 15px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background-color: #5cb85c;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.send-btn:disabled {
+  background-color: #a5d6a7;
+  cursor: not-allowed;
+}
+
+
+/* 🌑 Optional custom dark mode settings */
+html.dark {
+  background-color: #1a202c; /* dark background */
+  color: #f7fafc; /* light text */
+}
+
+

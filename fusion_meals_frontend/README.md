@@ -1,4 +1,6 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Fusion Meals Frontend
+
+This is the frontend for the Fusion Meals application, built with Next.js.
 
 ## Getting Started
 
@@ -6,31 +8,59 @@ First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create a `.env.local` file with the following:
 
-## Learn More
+```
+NEXT_PUBLIC_API_URL=http://localhost:8001
+```
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+For production deployment, set the `BACKEND_URL` environment variable in your Vercel project settings to point to your deployed backend API.
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Follow these steps to deploy the frontend on Vercel:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Push your code to a GitHub repository
+
+2. Visit the [Vercel Dashboard](https://vercel.com)
+
+3. Create a new project and import your repository
+
+4. Configure the following settings:
+   - Framework Preset: Next.js
+   - Root Directory: fusion_meals_frontend
+   - Environment Variables: 
+     - `BACKEND_URL`: Your deployed backend URL (e.g., https://fusion-meals-api.onrender.com)
+
+5. Click "Deploy"
+
+### Troubleshooting Vercel Deployment
+
+If you encounter build errors:
+
+1. Make sure the `BACKEND_URL` environment variable is correctly set in Vercel
+
+2. The build automatically ignores ESLint and TypeScript errors, so those shouldn't be an issue
+
+3. If you see Next.js runtime errors:
+   - Check for any client components using server-only features
+   - Ensure all components using `useSearchParams` are wrapped in Suspense boundaries
+
+## Backend Deployment
+
+The backend can be deployed separately on platforms like Render or Railway. Make sure to:
+
+1. Set the correct CORS settings in the backend to allow requests from your Vercel domain
+
+2. Update the `BACKEND_URL` in Vercel to point to your deployed backend
+
+## Learn More
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Vercel Documentation](https://vercel.com/docs) - explore Vercel features.

@@ -5,6 +5,27 @@ import os
 
 app = FastAPI()
 
+# Add a root endpoint for health checks and debugging
+@app.get("/")
+async def root():
+    return {
+        "status": "online",
+        "message": "Fusion Meals API is running",
+        "available_endpoints": [
+            "/recipes",
+            "/meal-plans",
+            "/grocery",
+            "/email",
+            "/ingredient-substitution",
+            "/recipe-scaling",
+            "/recipe-analysis",
+            "/recipe-sharing",
+            "/ai-chef",
+            "/global-cuisine",
+            "/meal-prep"
+        ]
+    }
+
 app.include_router(email.router, prefix="/email", tags=["Email"])  # ✅ Include router
 
 # Get allowed origins from environment or use defaults

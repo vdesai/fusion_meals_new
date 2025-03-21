@@ -30,6 +30,18 @@ except Exception as e:
 
 router = APIRouter()
 
+@router.get("/")
+async def get_recipes_info():
+    """Returns information about the recipes API."""
+    return {
+        "status": "ok",
+        "message": "Welcome to the Fusion Meals Recipe API",
+        "endpoints": {
+            "POST /generate": "Generate a fusion recipe",
+            "GET /recipe-of-the-day": "Get a random recipe of the day"
+        }
+    }
+
 class RecipeRequest(BaseModel):
     ingredients: str
     cuisine1: str

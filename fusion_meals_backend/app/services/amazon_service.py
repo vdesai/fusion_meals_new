@@ -9,7 +9,12 @@ import json
 import xml.etree.ElementTree as ET
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
-import requests
+try:
+    import requests
+except ImportError:
+    # Handle the case where requests is not installed
+    requests = None
+    print("Warning: 'requests' module not installed. Mock data will be used for Amazon services.")
 from pydantic import BaseModel
 import logging
 
@@ -37,9 +42,12 @@ class AmazonApiClient:
         self.partner_tag = os.getenv("AMAZON_PARTNER_TAG")
         self.region = os.getenv("AMAZON_REGION", "us-east-1")
         
+        # Check if requests module is available and credentials exist
+        self.has_credentials = bool(self.access_key and self.secret_key and self.partner_tag and requests is not None)
+        
         # Always use mock data for now since we don't have API credentials
-        self.has_credentials = False
-        logger.info("Using mock data for Amazon product search")
+        if not self.has_credentials:
+            logger.info("Using mock data for Amazon product search (missing credentials or requests module)")
         
         # Determine the endpoint based on region
         # Format: webservices.amazon.<domain>

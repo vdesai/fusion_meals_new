@@ -38,53 +38,105 @@ function RecipePageContent() {
     setLoading(true);
 
     try {
+      setRecipe(''); // Clear any previous recipe
+
       // Set a longer timeout for the recipe generation request
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 120000); // 2-minute timeout
 
-      // Use the Next.js API route instead of calling the backend directly
-      const response = await fetch('/api/generate-recipe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ingredients,
-          cuisine_type: cuisine1,
-          meal_type: cuisine2,
-          dietary_restrictions: dietaryPreference,
-          serving_size: servingSize,
-          cooking_skill: cookingSkill,
-          is_premium: isPremium
-        }),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId); // Clear the timeout if the request completes
-
-      if (!response.ok) {
-        throw new Error(`Failed to generate recipe: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
+      console.log('Submitting recipe request'); // Debug log
       
-      // This data structure comes from our local API route
-      if (data) {
-        setRecipe(data.description + "\n\n" + data.ingredients.join("\n") + "\n\n" + data.instructions.join("\n"));
-        setImageUrl(data.image_url || '/images/fallback-recipe.jpg');
-        toast.success('Recipe generated successfully!');
-      }
-    } catch (error) {
-      console.error('Error generating recipe:', error);
-      
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        toast.error('Recipe generation took too long. Please try again or try with simpler ingredients.');
-      } else {
-        // Create a mock recipe as fallback
+      // Try loading from a relative path first
+      try {
+        const response = await fetch('/api/generate-recipe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ingredients,
+            cuisine_type: cuisine1,
+            meal_type: cuisine2,
+            dietary_restrictions: dietaryPreference,
+            serving_size: servingSize,
+            cooking_skill: cookingSkill,
+            is_premium: isPremium
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`API response error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Received API response'); // Debug log
+        
+        if (data) {
+          // Format the response in a user-friendly way
+          let formattedRecipe = '';
+          
+          if (data.title) {
+            formattedRecipe += `🍴 **Recipe Name**: ${data.title}\n\n`;
+          }
+          
+          if (data.description) {
+            formattedRecipe += `${data.description}\n\n`;
+          }
+          
+          if (data.ingredients && data.ingredients.length > 0) {
+            formattedRecipe += `🛒 **Ingredients**:\n`;
+            data.ingredients.forEach((ingredient: string) => {
+              formattedRecipe += `- ${ingredient}\n`;
+            });
+            formattedRecipe += '\n';
+          }
+          
+          if (data.instructions && data.instructions.length > 0) {
+            formattedRecipe += `👩‍🍳 **Instructions**:\n`;
+            data.instructions.forEach((instruction: string, index: number) => {
+              formattedRecipe += `${index + 1}. ${instruction}\n`;
+            });
+            formattedRecipe += '\n';
+          }
+          
+          if (data.nutrition_info) {
+            formattedRecipe += `💪 **Nutrition Info**:\n`;
+            formattedRecipe += `- Calories: ${data.nutrition_info.calories}\n`;
+            formattedRecipe += `- Protein: ${data.nutrition_info.protein}\n`;
+            formattedRecipe += `- Carbs: ${data.nutrition_info.carbs}\n`;
+            formattedRecipe += `- Fat: ${data.nutrition_info.fat}\n`;
+          }
+          
+          setRecipe(formattedRecipe);
+          setImageUrl(data.image_url || 'https://placehold.co/600x400?text=Recipe+Image');
+          toast.success('Recipe generated successfully!');
+        } else {
+          throw new Error('Empty response data');
+        }
+      } catch (apiError) {
+        console.error('API route error:', apiError);
+        
+        // Use the mock data as fallback
         const mockRecipe = generateMockRecipe();
         setRecipe(mockRecipe);
-        setImageUrl('/images/fallback-recipe.jpg');
-        toast.error('Using demo recipe. Backend service is unavailable.');
+        setImageUrl('https://placehold.co/600x400?text=Demo+Recipe');
+        toast.error('Using demo recipe. API service is unavailable.');
+      }
+    } catch (error) {
+      console.error('Top-level error:', error);
+      
+      // Final fallback
+      const mockRecipe = generateMockRecipe();
+      setRecipe(mockRecipe);
+      setImageUrl('https://placehold.co/600x400?text=Demo+Recipe');
+      
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        toast.error('Recipe generation took too long. Using demo recipe instead.');
+      } else {
+        toast.error('Something went wrong. Using demo recipe instead.');
       }
     } finally {
       setLoading(false);

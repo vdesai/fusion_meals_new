@@ -38,8 +38,11 @@ interface MealPlan {
 }
 
 export async function POST(request: NextRequest) {
+  console.log("[API] Starting /api/generate-meal-plan request");
+  
   try {
     const req = await request.json() as FrontendMealPlanRequest;
+    console.log("[API] Request body processed");
     
     // Transform the request to match what the backend expects
     const backendRequest: BackendMealPlanRequest = {
@@ -52,43 +55,81 @@ export async function POST(request: NextRequest) {
       backendRequest.preferences += ` (excluding: ${req.exclude.join(', ')})`;
     }
     
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001';
-    console.log('Using API URL for generate-meal-plan:', apiUrl);
-    const response = await fetch(`${apiUrl}/meal-plans/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(backendRequest)
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Backend API error:', errorData);
-      
-      // If the backend fails, return mock data for demo purposes
-      return NextResponse.json(getMockMealPlan(req));
-    }
-
-    // Parse the response from the backend
-    const data = await response.json();
+    // Log the transformed request
+    console.log("[API] Transformed request:", JSON.stringify(backendRequest).substring(0, 100) + "...");
     
-    if (data && data.meal_plan) {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001';
+      console.log('[API] Using API URL for generate-meal-plan:', apiUrl);
+      
+      // Add a timeout to the fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30-second timeout
+      
       try {
-        // Transform markdown meal plan into structured data
-        const transformedMealPlan = parseMealPlanMarkdown(data.meal_plan, req.days || 7);
-        return NextResponse.json(transformedMealPlan);
-      } catch (parseError) {
-        console.error('Error parsing meal plan markdown:', parseError);
+        const response = await fetch(`${apiUrl}/meal-plans/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(backendRequest),
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        console.log("[API] Backend response status:", response.status);
+
+        if (!response.ok) {
+          console.log(`[API] Backend returned error status: ${response.status}`);
+          
+          try {
+            const errorData = await response.json();
+            console.error('[API] Backend API error:', errorData);
+          } catch {
+            console.error('[API] Could not parse error JSON from backend');
+          }
+          
+          // If the backend fails, return mock data for demo purposes
+          console.log("[API] Returning mock data after error response");
+          return NextResponse.json(getMockMealPlan(req));
+        }
+
+        // Parse the response from the backend
+        const data = await response.json();
+        console.log("[API] Successfully received backend data");
+        
+        if (data && data.meal_plan) {
+          try {
+            // Transform markdown meal plan into structured data
+            console.log("[API] Transforming markdown to structured data");
+            const transformedMealPlan = parseMealPlanMarkdown(data.meal_plan, req.days || 7);
+            return NextResponse.json(transformedMealPlan);
+          } catch (parseError) {
+            console.error('[API] Error parsing meal plan markdown:', parseError);
+            console.log("[API] Returning mock data after parse error");
+            return NextResponse.json(getMockMealPlan(req));
+          }
+        }
+        
+        console.log("[API] No meal plan data in response, returning mock");
+        return NextResponse.json(getMockMealPlan(req));
+      } catch (fetchError) {
+        console.error('[API] Fetch error:', fetchError);
+        // Clear timeout if fetch failed
+        clearTimeout(timeoutId);
+        console.log("[API] Returning mock data after fetch error");
         return NextResponse.json(getMockMealPlan(req));
       }
+    } catch (backendError) {
+      console.error('[API] Backend error:', backendError);
+      console.log("[API] Returning mock data after backend error");
+      return NextResponse.json(getMockMealPlan(req));
     }
-    
-    return NextResponse.json(getMockMealPlan(req));
   } catch (error) {
-    console.error('Error generating meal plan:', error);
+    console.error('[API] Error generating meal plan:', error);
     
     // Return mock data in case of any error
+    console.log("[API] Returning mock data after top-level error");
     return NextResponse.json(getMockMealPlan({
       days: 3,
       people: 2,

@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import axios from 'axios';
 import MealPlanCard from '@/components/MealPlanCard';
 import ShareButtons from '@/components/ShareButtons';
 import toast from 'react-hot-toast';
@@ -13,33 +12,72 @@ export default function MealPlanPage() {
 
   const generateMealPlan = async () => {
     setLoading(true);
+    let mealPlanData = null;
+    
     try {
-      // Use the local Next.js API route instead of calling the backend directly
-      const response = await axios.post('/api/generate-meal-plan', {
-        days: 7,
-        people: 4,
-        diet_type: diet,
-        preferences: [preferences],
-      });
+      console.log('Submitting meal plan request'); // Debug log
       
-      // The response format is different than the backend directly
-      if (response.data && response.data.days) {
-        // For compatibility with MealPlanCard, convert structured data back to markdown
-        const markdownMealPlan = convertToMarkdown(response.data, diet);
-        setMealPlan(markdownMealPlan);
-      } else {
-        setMealPlan(response.data);
+      // Try local API call
+      try {
+        const response = await fetch('/api/generate-meal-plan', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            days: 7,
+            people: 4,
+            diet_type: diet,
+            preferences: preferences ? [preferences] : [],
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`API response error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Received API response'); // Debug log
+        
+        // The response format is different than the backend directly
+        if (data && data.days) {
+          // For compatibility with MealPlanCard, convert structured data back to markdown
+          const markdownMealPlan = convertToMarkdown(data, diet);
+          setMealPlan(markdownMealPlan);
+          mealPlanData = markdownMealPlan;
+        } else if (typeof data === 'string') {
+          // Direct markdown response
+          setMealPlan(data);
+          mealPlanData = data;
+        } else {
+          throw new Error('Unexpected response format');
+        }
+        
+        toast.success('Meal Plan generated successfully! 🎉');
+      } catch (apiError) {
+        console.error('API route error:', apiError);
+        // If API call fails, fall back to mock data
+        const mockData = generateMockMealPlan();
+        setMealPlan(mockData);
+        mealPlanData = mockData;
+        toast.error('Using demo meal plan. API service is unavailable.');
       }
-      
-      toast.success('Meal Plan generated successfully! 🎉');
     } catch (error) {
-      console.error('Error generating meal plan:', error);
-      // Use a mock meal plan when API is unavailable
-      const mockMealPlan = generateMockMealPlan();
-      setMealPlan(mockMealPlan);
-      toast.success('Using demo meal plan. Service is unavailable 😊');
+      console.error('Top-level error:', error);
+      // Final fallback to ensure we always show something
+      const mockData = generateMockMealPlan();
+      setMealPlan(mockData);
+      mealPlanData = mockData;
+      toast.error('Something went wrong. Using demo meal plan instead.');
     } finally {
       setLoading(false);
+      
+      // If we somehow still don't have data, use mock as a last resort
+      if (!mealPlanData) {
+        const mockData = generateMockMealPlan();
+        setMealPlan(mockData);
+        toast.error('No meal plan data received. Using demo instead.');
+      }
     }
   };
 

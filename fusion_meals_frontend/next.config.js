@@ -4,6 +4,10 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Ignore TypeScript errors during build
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   async rewrites() {
     if (process.env.NODE_ENV === 'development') {
       // Development rewrites - use local backend

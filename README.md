@@ -174,4 +174,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - If you get a `ModuleNotFoundError: No module named 'xyz'` error:
   - Check if the missing package is in your requirements.txt file
   - Add any missing dependencies to requirements.txt
-  - Force a rebuild in your Render dashboard or by pushing a new commit 
+  - Force a rebuild in your Render dashboard or by pushing a new commit
+- If you get a `SyntaxError: f-string: expressions nested too deeply` error:
+  - This happens when JSON examples are embedded in f-strings with too many nested curly braces
+  - Fix by using raw strings (r'''{}''') for the JSON template and inserting it into the f-string separately 

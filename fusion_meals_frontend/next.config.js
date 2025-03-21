@@ -12,8 +12,6 @@ const nextConfig = {
   images: {
     domains: ['placehold.co', 'images.unsplash.com', 'via.placeholder.com', 'fusion-meals-new.onrender.com'],
   },
-  // Set output directory
-  distDir: 'dist',
   // Keep rewrites as they were
   async rewrites() {
     // We're using our own API routes now, so no need for external rewrites

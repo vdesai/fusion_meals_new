@@ -142,11 +142,13 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 1. Create an account on [Render](https://render.com) or [Railway](https://railway.app).
 2. Set up a new Web Service pointing to your backend repository.
 3. Configure the build command: `pip install -r requirements.txt`
-4. Configure the start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+4. Configure the start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   - Note: For Render specifically, make sure to use the app module path (`app.main:app`) or it won't find your application.
 5. Set up Environment Variables:
    - `DATABASE_URL`: Your PostgreSQL connection string
    - `JWT_SECRET_KEY`: A secure random string
    - `FRONTEND_URL`: Your Vercel deployment URL
+   - `ALLOWED_ORIGINS`: Comma-separated list of allowed origins (e.g., `https://your-app.vercel.app,https://your-domain.com`)
    - Include any other API keys or secrets needed
 
 ### Database Deployment
@@ -164,4 +166,12 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ### Common Backend Issues
 - Ensure CORS is properly configured to allow requests from your Vercel domain.
-- Verify database connection by checking logs. 
+- Verify database connection by checking logs.
+- If you get a `Could not import module "main"` error on Render:
+  - Make sure your start command is `uvicorn app.main:app --host 0.0.0.0 --port $PORT` (not `uvicorn main:app`)
+  - This specifies the correct path to your main application file in the app directory
+  - Alternatively, use the provided `main.py` file in the root directory that imports from app.main
+- If you get a `ModuleNotFoundError: No module named 'xyz'` error:
+  - Check if the missing package is in your requirements.txt file
+  - Add any missing dependencies to requirements.txt
+  - Force a rebuild in your Render dashboard or by pushing a new commit 

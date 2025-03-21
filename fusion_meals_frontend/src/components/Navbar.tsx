@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, X, Globe, Home, ChefHat, BookOpen, ClipboardList, Utensils, Info, Scale, ShoppingBag } from "lucide-react";
+import { Menu, X, Globe, Home, ChefHat, BookOpen, ClipboardList, Utensils, Info, Scale } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 const Navbar = () => {
@@ -42,13 +42,6 @@ const Navbar = () => {
           >
             <Home className="mr-1 h-4 w-4" />
             Home
-          </Link>
-          <Link
-            href="/pantry"
-            className="border-transparent text-indigo-500 hover:border-indigo-300 hover:text-indigo-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-          >
-            <ShoppingBag className="mr-1 h-4 w-4" />
-            Pantry
           </Link>
           <Link
             href="/generate-recipe"
@@ -169,16 +162,6 @@ const Navbar = () => {
                     <div className="flex items-center">
                       <Home className="mr-1 h-4 w-4" />
                       Home
-                    </div>
-                  </Link>
-                  <Link
-                    href="/pantry"
-                    className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-indigo-500 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-700"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <div className="flex items-center">
-                      <ShoppingBag className="mr-1 h-4 w-4" />
-                      Pantry
                     </div>
                   </Link>
                   <Link

@@ -62,11 +62,12 @@ export async function POST(request: NextRequest) {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001';
       console.log('[API] Using API URL for generate-meal-plan:', apiUrl);
       
-      // Add a timeout to the fetch request
+      // Add a timeout to the fetch request - reduce to just 10 seconds for Render free tier
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30-second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
       
       try {
+        console.log('[API] Sending request to backend with timeout of 10 seconds');
         const response = await fetch(`${apiUrl}/meal-plans/generate`, {
           method: 'POST',
           headers: {
@@ -117,6 +118,18 @@ export async function POST(request: NextRequest) {
         console.error('[API] Fetch error:', fetchError);
         // Clear timeout if fetch failed
         clearTimeout(timeoutId);
+        
+        // Check if this was a timeout error
+        if (fetchError instanceof DOMException && fetchError.name === 'AbortError') {
+          console.log('[API] Request timed out - using mock data');
+          // Return a specific error code for timeouts
+          return NextResponse.json({
+            error: 'timeout',
+            message: 'The meal plan generation request timed out',
+            data: getMockMealPlan(req)
+          }, { status: 200 });
+        }
+        
         console.log("[API] Returning mock data after fetch error");
         return NextResponse.json(getMockMealPlan(req));
       }

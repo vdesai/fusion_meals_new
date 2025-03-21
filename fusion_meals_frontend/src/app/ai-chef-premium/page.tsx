@@ -1294,20 +1294,20 @@ export default function AIChefPremium() {
             <Card sx={{ mb: 4 }}>
               <CardContent>
                 {/* Look for menu info in curated_menu first, then in the main recipeData object */}
-                {recipeData && (recipeData.curated_menu || recipeData.theme || recipeData.overview || recipeData.chef_notes) ? (
+                {recipeData && ((recipeData as any).curated_menu || (recipeData as any).theme || (recipeData as any).overview || (recipeData as any).chef_notes) ? (
                   <>
                     <Typography variant="h4" color="primary" gutterBottom>
-                      {recipeData.curated_menu?.theme || recipeData.theme || 'Gourmet Recipe Collection'}
+                      {(recipeData as any).curated_menu?.theme || (recipeData as any).theme || 'Gourmet Recipe Collection'}
                     </Typography>
                     
                     <Typography variant="body1" paragraph>
-                      {recipeData.curated_menu?.overview || recipeData.overview || 'A collection of chef-curated recipes for your culinary enjoyment.'}
+                      {(recipeData as any).curated_menu?.overview || (recipeData as any).overview || 'A collection of chef-curated recipes for your culinary enjoyment.'}
                     </Typography>
                     
-                    {(recipeData.curated_menu?.chef_notes || recipeData.chef_notes) && (
+                    {((recipeData as any).curated_menu?.chef_notes || (recipeData as any).chef_notes) && (
                       <Paper variant="outlined" sx={{ p: 2, bgcolor: 'primary.lighter', mb: 4 }}>
                         <Typography variant="subtitle1" fontStyle="italic">
-                          <strong>Chef's Note:</strong> {recipeData.curated_menu?.chef_notes || recipeData.chef_notes}
+                          <strong>Chef's Note:</strong> {(recipeData as any).curated_menu?.chef_notes || (recipeData as any).chef_notes}
                         </Typography>
                       </Paper>
                     )}
@@ -1329,7 +1329,7 @@ export default function AIChefPremium() {
                 
                 <Typography variant="h6" gutterBottom>Complete Menu</Typography>
                 
-                {hasRecipes ? recipeData.recipes.map((recipe: any, index: number) => (
+                {hasRecipes ? (recipeData as any).recipes.map((recipe: any, index: number) => (
                   <Card key={index} variant="outlined" sx={{ mb: 3 }}>
                     <CardContent>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -1406,9 +1406,9 @@ export default function AIChefPremium() {
                 
                 <Box sx={{ mt: 4 }}>
                   <Typography variant="h6" sx={{ mb: 2 }}>Shopping List</Typography>
-                  {recipeData && recipeData.shopping_list ? (
+                  {(recipeData as any) && (recipeData as any).shopping_list ? (
                     <Grid container spacing={2}>
-                      {Object.entries(recipeData.shopping_list).map(([category, items]: [string, any], index: number) => (
+                      {Object.entries((recipeData as any).shopping_list).map(([category, items]: [string, any], index: number) => (
                         <Grid item xs={12} sm={6} md={4} key={index}>
                           <Card variant="outlined" sx={{ height: '100%' }}>
                             <CardContent>
@@ -1435,7 +1435,7 @@ export default function AIChefPremium() {
                               Main Ingredients
                             </Typography>
                             <Box component="ul" sx={{ pl: 2 }}>
-                              {recipeData.recipes.slice(0, 1).map((recipe: any) => 
+                              {(recipeData as any).recipes.slice(0, 1).map((recipe: any) => 
                                 Array.isArray(recipe.ingredients) ? 
                                   recipe.ingredients.map((ingredient: any, i: number) => (
                                     <Typography component="li" key={i} variant="body2">
@@ -1488,9 +1488,9 @@ export default function AIChefPremium() {
                 
                 <Box sx={{ mt: 4 }}>
                   <Typography variant="h6" sx={{ mb: 2 }}>Preparation Timeline</Typography>
-                  {recipeData && recipeData.preparation_timeline ? (
+                  {(recipeData as any) && (recipeData as any).preparation_timeline ? (
                     <Grid container spacing={2}>
-                      {Object.entries(recipeData.preparation_timeline).map(([timepoint, tasks]: [string, any], index: number) => (
+                      {Object.entries((recipeData as any).preparation_timeline).map(([timepoint, tasks]: [string, any], index: number) => (
                         <Grid item xs={12} md={6} key={index}>
                           <Card variant="outlined" sx={{ height: '100%' }}>
                             <CardContent>
@@ -1533,8 +1533,8 @@ export default function AIChefPremium() {
                             <Box component="ul" sx={{ pl: 2 }}>
                               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Prep ingredients: wash, chop, and measure all components</Typography>
                               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
-                                {recipeData.recipes[0]?.prep_time || recipeData.recipes[0]?.preparation_time ? 
-                                  `Allow ${recipeData.recipes[0].prep_time || recipeData.recipes[0].preparation_time} for preparation` :
+                                {(recipeData as any).recipes[0]?.prep_time || (recipeData as any).recipes[0]?.preparation_time ? 
+                                  `Allow ${(recipeData as any).recipes[0].prep_time || (recipeData as any).recipes[0].preparation_time} for preparation` :
                                   'Allow adequate time for preparation before cooking'}
                               </Typography>
                               <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>Cook dishes according to recipe instructions</Typography>
@@ -1549,35 +1549,35 @@ export default function AIChefPremium() {
                   )}
                 </Box>
                 
-                {recipeData && recipeData.cultural_context ? (
+                {(recipeData as any) && (recipeData as any).cultural_context ? (
                   <Box sx={{ mt: 4 }}>
                     <Typography variant="h6" sx={{ mb: 2 }}>Cultural Context</Typography>
                     <Card variant="outlined">
                       <CardContent>
-                        {recipeData.cultural_context.history && (
+                        {(recipeData as any).cultural_context.history && (
                           <>
                             <Typography variant="subtitle2" gutterBottom>History:</Typography>
-                            <Typography variant="body2" paragraph>{recipeData.cultural_context.history}</Typography>
+                            <Typography variant="body2" paragraph>{(recipeData as any).cultural_context.history}</Typography>
                           </>
                         )}
                         
-                        {recipeData.cultural_context.regional_significance && (
+                        {(recipeData as any).cultural_context.regional_significance && (
                           <>
                             <Typography variant="subtitle2" gutterBottom>Regional Significance:</Typography>
-                            <Typography variant="body2" paragraph>{recipeData.cultural_context.regional_significance}</Typography>
+                            <Typography variant="body2" paragraph>{(recipeData as any).cultural_context.regional_significance}</Typography>
                           </>
                         )}
                         
-                        {recipeData.cultural_context.traditional_occasions && (
+                        {(recipeData as any).cultural_context.traditional_occasions && (
                           <>
                             <Typography variant="subtitle2" gutterBottom>Traditional Occasions:</Typography>
-                            <Typography variant="body2">{recipeData.cultural_context.traditional_occasions}</Typography>
+                            <Typography variant="body2">{(recipeData as any).cultural_context.traditional_occasions}</Typography>
                           </>
                         )}
                         
-                        {!recipeData.cultural_context.history && 
-                         !recipeData.cultural_context.regional_significance && 
-                         !recipeData.cultural_context.traditional_occasions && (
+                        {!(recipeData as any).cultural_context.history && 
+                         !(recipeData as any).cultural_context.regional_significance && 
+                         !(recipeData as any).cultural_context.traditional_occasions && (
                           <Typography variant="body2">Cultural context information not available</Typography>
                         )}
                       </CardContent>
@@ -1585,46 +1585,46 @@ export default function AIChefPremium() {
                   </Box>
                 ) : null}
                 
-                {recipeData && recipeData.dietary_modifications ? (
+                {(recipeData as any) && (recipeData as any).dietary_modifications ? (
                   <Box sx={{ mt: 4 }}>
                     <Typography variant="h6" sx={{ mb: 2 }}>Dietary Modifications</Typography>
                     <Grid container spacing={2}>
-                      {recipeData.dietary_modifications.gluten_free && (
+                      {(recipeData as any).dietary_modifications.gluten_free && (
                         <Grid item xs={12} md={4}>
                           <Card variant="outlined" sx={{ height: '100%' }}>
                             <CardContent>
                               <Typography variant="subtitle1" color="primary" gutterBottom>Gluten-Free</Typography>
-                              <Typography variant="body2">{recipeData.dietary_modifications.gluten_free}</Typography>
+                              <Typography variant="body2">{(recipeData as any).dietary_modifications.gluten_free}</Typography>
                             </CardContent>
                           </Card>
                         </Grid>
                       )}
                       
-                      {recipeData.dietary_modifications.vegetarian && (
+                      {(recipeData as any).dietary_modifications.vegetarian && (
                         <Grid item xs={12} md={4}>
                           <Card variant="outlined" sx={{ height: '100%' }}>
                             <CardContent>
                               <Typography variant="subtitle1" color="primary" gutterBottom>Vegetarian</Typography>
-                              <Typography variant="body2">{recipeData.dietary_modifications.vegetarian}</Typography>
+                              <Typography variant="body2">{(recipeData as any).dietary_modifications.vegetarian}</Typography>
                             </CardContent>
                           </Card>
                         </Grid>
                       )}
                       
-                      {recipeData.dietary_modifications.dairy_free && (
+                      {(recipeData as any).dietary_modifications.dairy_free && (
                         <Grid item xs={12} md={4}>
                           <Card variant="outlined" sx={{ height: '100%' }}>
                             <CardContent>
                               <Typography variant="subtitle1" color="primary" gutterBottom>Dairy-Free</Typography>
-                              <Typography variant="body2">{recipeData.dietary_modifications.dairy_free}</Typography>
+                              <Typography variant="body2">{(recipeData as any).dietary_modifications.dairy_free}</Typography>
                             </CardContent>
                           </Card>
                         </Grid>
                       )}
                       
-                      {!recipeData.dietary_modifications.gluten_free && 
-                       !recipeData.dietary_modifications.vegetarian && 
-                       !recipeData.dietary_modifications.dairy_free && (
+                      {!(recipeData as any).dietary_modifications.gluten_free && 
+                       !(recipeData as any).dietary_modifications.vegetarian && 
+                       !(recipeData as any).dietary_modifications.dairy_free && (
                         <Grid item xs={12}>
                           <Alert severity="info">No dietary modifications available for this recipe collection</Alert>
                         </Grid>

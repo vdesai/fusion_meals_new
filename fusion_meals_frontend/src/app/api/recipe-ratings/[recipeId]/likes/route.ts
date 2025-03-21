@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
+import { auth } from "@/auth";
 
 export async function GET(
   request: Request,
   { params }: { params: { recipeId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const userId = session?.user?.id;
 
     const response = await fetch(
@@ -30,7 +29,7 @@ export async function POST(
   { params }: { params: { recipeId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },

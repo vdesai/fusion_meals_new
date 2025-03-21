@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "react-hot-toast"; // ✅ For toast notifications
 import Navbar from "@/components/Navbar";
 import { PantryProvider } from "@/context/PantryContext";
+import AuthProvider from "@/components/AuthProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,9 +17,6 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Fusion Meals",
   },
-  icons: {
-    apple: "/icons/icon-192x192.png",
-  },
 };
 
 export default function RootLayout({
@@ -29,11 +27,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <PantryProvider>
-          <Navbar />
-          <main className="min-h-screen bg-gray-50">{children}</main>
-          <Toaster position="bottom-right" />
-        </PantryProvider>
+        <AuthProvider>
+          <PantryProvider>
+            <Navbar />
+            <main className="min-h-screen bg-gray-50">{children}</main>
+            <Toaster position="bottom-right" />
+          </PantryProvider>
+        </AuthProvider>
       </body>
     </html>
   );

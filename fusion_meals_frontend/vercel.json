@@ -5,8 +5,7 @@
   "outputDirectory": ".next",
   "regions": ["sfo1"],
   "env": {
-    "NEXTAUTH_SECRET": "your-secret-value-here",
-    "NEXTAUTH_URL": "${VERCEL_URL}"
+    "NEXT_PUBLIC_API_URL": "${BACKEND_URL}"
   },
   "headers": [
     {

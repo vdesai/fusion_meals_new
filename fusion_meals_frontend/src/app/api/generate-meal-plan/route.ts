@@ -59,20 +59,21 @@ export async function POST(request: NextRequest) {
     console.log("[API] Transformed request:", JSON.stringify(backendRequest).substring(0, 100) + "...");
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://fusion-meals-new.onrender.com';
       console.log('[API] Using API URL for generate-meal-plan:', apiUrl);
       
       // Add a timeout to the fetch request - reduce to just 10 seconds for Render free tier
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15-second timeout
       
       try {
-        console.log('[API] Sending request to backend with timeout of 10 seconds');
+        console.log('[API] Sending request to backend with timeout of 15 seconds');
         // Fix the endpoint URL to match the backend API structure
-        console.log('[API] Full backend URL:', `${apiUrl}/meal-plans/generate`);
+        console.log('[API] Full backend URL:', `${apiUrl}/recipes/generate`);
         
         try {
           // Attempt to fetch the backend API status first to check connectivity
+          console.log('[API] Checking backend availability at:', `${apiUrl}/recipes`);
           const statusResponse = await fetch(`${apiUrl}/recipes`, {
             method: 'GET',
             signal: controller.signal,
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
             console.log('[API] Backend status check response:', statusResponse.status);
             if (statusResponse.ok) {
               const statusData = await statusResponse.json();
-              console.log('[API] Backend API status:', statusData);
+              console.log('[API] Backend API status:', JSON.stringify(statusData));
             }
           } else {
             console.log('[API] Backend status check failed completely');
@@ -94,69 +95,20 @@ export async function POST(request: NextRequest) {
           console.error('[API] Error checking backend status:', statusError);
         }
         
-        const response = await fetch(`${apiUrl}/meal-plans/generate`, {
+        // Since we know the /meal-plans endpoint likely doesn't exist,
+        // let's go directly to the /recipes/generate endpoint with a flag
+        console.log('[API] Using recipes/generate endpoint');
+        const response = await fetch(`${apiUrl}/recipes/generate`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(backendRequest),
+          body: JSON.stringify({
+            ...backendRequest,
+            is_meal_plan: true // Add a flag to indicate this is a meal plan request
+          }),
           signal: controller.signal
         });
-        
-        // If endpoint doesn't exist, try the recipes endpoint structure instead
-        if (response.status === 404) {
-          console.log('[API] Meal-plans endpoint not found, trying recipes endpoint instead');
-          clearTimeout(timeoutId);
-          
-          // Set up a new timeout for the second attempt
-          const newController = new AbortController();
-          const newTimeoutId = setTimeout(() => newController.abort(), 10000);
-          
-          try {
-            // Try the recipes/generate endpoint as a fallback
-            const altResponse = await fetch(`${apiUrl}/recipes/generate`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                ...backendRequest,
-                is_meal_plan: true // Add a flag to indicate this is a meal plan request
-              }),
-              signal: newController.signal
-            });
-            
-            clearTimeout(newTimeoutId);
-            
-            if (!altResponse.ok) {
-              console.log(`[API] Alternative endpoint returned error status: ${altResponse.status}`);
-              // Fall back to mock data
-              return NextResponse.json(getMockMealPlan(req));
-            }
-            
-            const altData = await altResponse.json();
-            console.log("[API] Successfully received backend data from alternative endpoint");
-            
-            if (altData && (altData.meal_plan || altData.recipe)) {
-              try {
-                // The response format might be different depending on the endpoint
-                const mealPlanText = altData.meal_plan || altData.recipe || '';
-                console.log("[API] Transforming markdown to structured data");
-                const transformedMealPlan = parseMealPlanMarkdown(mealPlanText, req.days || 7);
-                return NextResponse.json(transformedMealPlan);
-              } catch (parseError) {
-                console.error('[API] Error parsing meal plan markdown:', parseError);
-                return NextResponse.json(getMockMealPlan(req));
-              }
-            }
-            
-            return NextResponse.json(getMockMealPlan(req));
-          } catch (altFetchError) {
-            clearTimeout(newTimeoutId);
-            console.error('[API] Alternative endpoint fetch error:', altFetchError);
-            return NextResponse.json(getMockMealPlan(req));
-          }
-        }
         
         clearTimeout(timeoutId);
         console.log("[API] Backend response status:", response.status);

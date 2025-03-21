@@ -31,12 +31,12 @@ export async function POST(request: NextRequest) {
     
     try {
       // Forward the request to the backend API
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://fusion-meals-new.onrender.com';
       console.log('[API] Using API URL for generate-recipe:', apiUrl);
       
       // Add a timeout to the fetch request
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15-second timeout
       
       try {
         console.log('[API] Sending request to backend recipes/generate endpoint');
@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
         
         // First, check if the backend is available at all
         try {
+          console.log('[API] Checking backend availability at:', `${apiUrl}/recipes`);
           const statusCheck = await fetch(`${apiUrl}/recipes`, {
             method: 'GET',
             signal: controller.signal,
@@ -58,9 +59,11 @@ export async function POST(request: NextRequest) {
             throw new Error('Backend unavailable');
           }
           
+          console.log('[API] Backend status check response:', statusCheck.status);
+          
           if (statusCheck.ok) {
             const statusData = await statusCheck.json();
-            console.log('[API] Backend status:', statusData);
+            console.log('[API] Backend API status:', JSON.stringify(statusData));
           } else {
             console.log('[API] Backend status check failed with status:', statusCheck.status);
           }

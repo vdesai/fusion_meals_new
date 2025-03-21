@@ -1,10 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { toast } from 'react-hot-toast';
 import { useSearchParams } from 'next/navigation';
 
-export default function RecipePage() {
+// Loading fallback component
+function RecipePageLoading() {
+  return <div className="container mx-auto px-4 py-8">Loading...</div>;
+}
+
+// Main component
+function RecipePageContent() {
   const searchParams = useSearchParams();
   
   const [ingredients, setIngredients] = useState('');
@@ -201,5 +207,14 @@ export default function RecipePage() {
         </div>
       )}
     </div>
+  );
+}
+
+// Export the wrapped component
+export default function RecipePage() {
+  return (
+    <Suspense fallback={<RecipePageLoading />}>
+      <RecipePageContent />
+    </Suspense>
   );
 }

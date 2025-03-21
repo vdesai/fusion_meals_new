@@ -39,14 +39,23 @@ function RecipePageContent() {
 
     try {
       setRecipe(''); // Clear any previous recipe
+      toast.loading('Generating your fusion recipe...');
 
       // Set a longer timeout for the recipe generation request
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2-minute timeout
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15-second timeout
 
-      console.log('Submitting recipe request'); // Debug log
+      console.log('Submitting recipe request with parameters:', {
+        ingredients,
+        cuisine_type: cuisine1,
+        meal_type: cuisine2,
+        dietary_restrictions: dietaryPreference,
+        serving_size: servingSize,
+        cooking_skill: cookingSkill,
+        is_premium: isPremium
+      }); 
       
-      // Try loading from a relative path first
+      // Try loading from the local API route
       try {
         const response = await fetch('/api/generate-recipe', {
           method: 'POST',

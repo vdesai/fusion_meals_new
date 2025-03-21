@@ -36,9 +36,38 @@ export async function POST(request: NextRequest) {
       
       // Add a timeout to the fetch request
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30-second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
       
       try {
+        console.log('[API] Sending request to backend recipes/generate endpoint');
+        // Ensure we're using the correct endpoint based on the backend API structure
+        console.log('[API] Full backend URL:', `${apiUrl}/recipes/generate`);
+        
+        // First, check if the backend is available at all
+        try {
+          const statusCheck = await fetch(`${apiUrl}/recipes`, {
+            method: 'GET',
+            signal: controller.signal,
+          }).catch(err => {
+            console.error('[API] Status check failed:', err.message);
+            return null;
+          });
+          
+          if (!statusCheck) {
+            console.log('[API] Backend appears to be unavailable');
+            throw new Error('Backend unavailable');
+          }
+          
+          if (statusCheck.ok) {
+            const statusData = await statusCheck.json();
+            console.log('[API] Backend status:', statusData);
+          } else {
+            console.log('[API] Backend status check failed with status:', statusCheck.status);
+          }
+        } catch (statusError) {
+          console.error('[API] Error checking backend availability:', statusError);
+        }
+        
         const response = await fetch(`${apiUrl}/recipes/generate`, {
           method: 'POST',
           headers: {

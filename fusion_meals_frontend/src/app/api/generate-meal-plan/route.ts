@@ -68,6 +68,32 @@ export async function POST(request: NextRequest) {
       
       try {
         console.log('[API] Sending request to backend with timeout of 10 seconds');
+        // Fix the endpoint URL to match the backend API structure
+        console.log('[API] Full backend URL:', `${apiUrl}/meal-plans/generate`);
+        
+        try {
+          // Attempt to fetch the backend API status first to check connectivity
+          const statusResponse = await fetch(`${apiUrl}/recipes`, {
+            method: 'GET',
+            signal: controller.signal,
+          }).catch(err => {
+            console.error('[API] Status check failed:', err.message);
+            return null;
+          });
+          
+          if (statusResponse) {
+            console.log('[API] Backend status check response:', statusResponse.status);
+            if (statusResponse.ok) {
+              const statusData = await statusResponse.json();
+              console.log('[API] Backend API status:', statusData);
+            }
+          } else {
+            console.log('[API] Backend status check failed completely');
+          }
+        } catch (statusError) {
+          console.error('[API] Error checking backend status:', statusError);
+        }
+        
         const response = await fetch(`${apiUrl}/meal-plans/generate`, {
           method: 'POST',
           headers: {
@@ -76,6 +102,61 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify(backendRequest),
           signal: controller.signal
         });
+        
+        // If endpoint doesn't exist, try the recipes endpoint structure instead
+        if (response.status === 404) {
+          console.log('[API] Meal-plans endpoint not found, trying recipes endpoint instead');
+          clearTimeout(timeoutId);
+          
+          // Set up a new timeout for the second attempt
+          const newController = new AbortController();
+          const newTimeoutId = setTimeout(() => newController.abort(), 10000);
+          
+          try {
+            // Try the recipes/generate endpoint as a fallback
+            const altResponse = await fetch(`${apiUrl}/recipes/generate`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                ...backendRequest,
+                is_meal_plan: true // Add a flag to indicate this is a meal plan request
+              }),
+              signal: newController.signal
+            });
+            
+            clearTimeout(newTimeoutId);
+            
+            if (!altResponse.ok) {
+              console.log(`[API] Alternative endpoint returned error status: ${altResponse.status}`);
+              // Fall back to mock data
+              return NextResponse.json(getMockMealPlan(req));
+            }
+            
+            const altData = await altResponse.json();
+            console.log("[API] Successfully received backend data from alternative endpoint");
+            
+            if (altData && (altData.meal_plan || altData.recipe)) {
+              try {
+                // The response format might be different depending on the endpoint
+                const mealPlanText = altData.meal_plan || altData.recipe || '';
+                console.log("[API] Transforming markdown to structured data");
+                const transformedMealPlan = parseMealPlanMarkdown(mealPlanText, req.days || 7);
+                return NextResponse.json(transformedMealPlan);
+              } catch (parseError) {
+                console.error('[API] Error parsing meal plan markdown:', parseError);
+                return NextResponse.json(getMockMealPlan(req));
+              }
+            }
+            
+            return NextResponse.json(getMockMealPlan(req));
+          } catch (altFetchError) {
+            clearTimeout(newTimeoutId);
+            console.error('[API] Alternative endpoint fetch error:', altFetchError);
+            return NextResponse.json(getMockMealPlan(req));
+          }
+        }
         
         clearTimeout(timeoutId);
         console.log("[API] Backend response status:", response.status);

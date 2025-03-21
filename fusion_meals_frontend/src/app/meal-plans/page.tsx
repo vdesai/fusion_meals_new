@@ -25,6 +25,7 @@ export default function MealPlanPage() {
       const timeoutId = setTimeout(() => controller.abort(), 12000); // 12-second timeout
       
       try {
+        console.log('Sending request to local API route: /api/generate-meal-plan');
         const response = await fetch('/api/generate-meal-plan', {
           method: 'POST',
           headers: {

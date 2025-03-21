@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, X, Globe, Home, ChefHat, BookOpen, ClipboardList, Utensils, Settings, User, LogOut, Info, Scale, ShoppingBag } from "lucide-react";
+import { Menu, X, Globe, Home, ChefHat, BookOpen, ClipboardList, Utensils, Info, Scale, ShoppingBag } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 const Navbar = () => {
@@ -106,18 +106,6 @@ const Navbar = () => {
             <div className="absolute right-0 top-10 mt-2 w-56 rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 z-20">
               <div className="py-1">
                 <Link
-                  href="/account"
-                  className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <User className="mr-3 h-4 w-4" /> My Account
-                </Link>
-                <Link
-                  href="/settings"
-                  className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <Settings className="mr-3 h-4 w-4" /> Settings
-                </Link>
-                <Link
                   href="/ingredient-substitution"
                   className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
@@ -135,16 +123,6 @@ const Navbar = () => {
                 >
                   <Info className="mr-3 h-4 w-4" /> About Us
                 </Link>
-                <hr className="my-1 border-gray-200 dark:border-gray-700" />
-                <button
-                  className="flex w-full items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  onClick={() => {
-                    // Add logout functionality here
-                    console.log('Logging out...');
-                  }}
-                >
-                  <LogOut className="mr-3 h-4 w-4" /> Sign Out
-                </button>
               </div>
             </div>
           )}
@@ -256,6 +234,38 @@ const Navbar = () => {
                           Premium
                         </span>
                       </span>
+                    </div>
+                  </Link>
+                </div>
+                <div className="py-6">
+                  <Link
+                    href="/ingredient-substitution"
+                    className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-indigo-500 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-700"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <div className="flex items-center">
+                      <Utensils className="mr-1 h-4 w-4" />
+                      Ingredient Substitution
+                    </div>
+                  </Link>
+                  <Link
+                    href="/recipe-scaling"
+                    className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-indigo-500 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-700"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <div className="flex items-center">
+                      <Scale className="mr-1 h-4 w-4" />
+                      Recipe Scaling
+                    </div>
+                  </Link>
+                  <Link
+                    href="/about"
+                    className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-indigo-500 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-700"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <div className="flex items-center">
+                      <Info className="mr-1 h-4 w-4" />
+                      About Us
                     </div>
                   </Link>
                 </div>

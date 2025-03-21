@@ -4,7 +4,6 @@ import "./globals.css";
 import { Toaster } from "react-hot-toast"; // ✅ For toast notifications
 import Navbar from "@/components/Navbar";
 import { PantryProvider } from "@/context/PantryContext";
-import AuthProvider from "@/components/AuthProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -27,13 +26,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthProvider>
-          <PantryProvider>
-            <Navbar />
-            <main className="min-h-screen bg-gray-50">{children}</main>
-            <Toaster position="bottom-right" />
-          </PantryProvider>
-        </AuthProvider>
+        <PantryProvider>
+          <Navbar />
+          <main className="min-h-screen bg-gray-50">{children}</main>
+          <Toaster position="bottom-right" />
+        </PantryProvider>
       </body>
     </html>
   );

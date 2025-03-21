@@ -580,7 +580,7 @@ export default function AIChefPremium() {
               {resultTabs === 0 && content.meal_plan && (
                 <Box>
                   <Typography variant="h5" gutterBottom>Your Personalized Meal Plan</Typography>
-                  {content.meal_plan.days && content.meal_plan.days.map((day, index) => (
+                  {content.meal_plan.days && content.meal_plan.days.map((day: MealPlanDay, index: number) => (
                     <Card key={index} sx={{ mb: 2 }}>
                       <CardContent>
                         <Typography variant="h6" color="primary" gutterBottom>{day.day}</Typography>

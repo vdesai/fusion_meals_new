@@ -47,54 +47,54 @@ const nextConfig = {
       ]
     } else {
       // Get the backend URL from environment variables
-      const backendUrl = process.env.BACKEND_URL || 'https://fusion-meals-backend.onrender.com';
-      console.log(`Using backend URL: ${backendUrl}`);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://fusion-meals-new.onrender.com';
+      console.log(`Using API URL: ${apiUrl}`);
       
       // Production rewrites - use deployed backend URL
       return [
         {
           source: '/api/recipes/:path*',
-          destination: `${backendUrl}/recipes/:path*`,
+          destination: `${apiUrl}/recipes/:path*`,
         },
         {
           source: '/api/meal-plans/:path*',
-          destination: `${backendUrl}/meal-plans/:path*`,
+          destination: `${apiUrl}/meal-plans/:path*`,
         },
         {
           source: '/api/grocery/:path*',
-          destination: `${backendUrl}/grocery/:path*`,
+          destination: `${apiUrl}/grocery/:path*`,
         },
         {
           source: '/api/email/:path*',
-          destination: `${backendUrl}/email/:path*`,
+          destination: `${apiUrl}/email/:path*`,
         },
         {
           source: '/api/ingredient-substitution/:path*',
-          destination: `${backendUrl}/ingredient-substitution/:path*`,
+          destination: `${apiUrl}/ingredient-substitution/:path*`,
         },
         {
           source: '/api/recipe-scaling/:path*',
-          destination: `${backendUrl}/recipe-scaling/:path*`,
+          destination: `${apiUrl}/recipe-scaling/:path*`,
         },
         {
           source: '/api/recipe-analysis/:path*',
-          destination: `${backendUrl}/recipe-analysis/:path*`,
+          destination: `${apiUrl}/recipe-analysis/:path*`,
         },
         {
           source: '/api/recipe-sharing/:path*',
-          destination: `${backendUrl}/recipe-sharing/:path*`,
+          destination: `${apiUrl}/recipe-sharing/:path*`,
         },
         {
           source: '/api/ai-chef/:path*',
-          destination: `${backendUrl}/ai-chef/:path*`,
+          destination: `${apiUrl}/ai-chef/:path*`,
         },
         {
           source: '/api/global-cuisine/:path*',
-          destination: `${backendUrl}/global-cuisine/:path*`,
+          destination: `${apiUrl}/global-cuisine/:path*`,
         },
         {
           source: '/api/meal-prep/:path*',
-          destination: `${backendUrl}/meal-prep/:path*`,
+          destination: `${apiUrl}/meal-prep/:path*`,
         }
       ]
     }

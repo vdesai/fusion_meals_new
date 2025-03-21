@@ -816,7 +816,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Forward the request to the backend API
-    const response = await fetch(`${process.env.BACKEND_URL || 'http://127.0.0.1:8001'}/ai-chef/premium/ai-chef`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001'}/ai-chef/premium/ai-chef`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

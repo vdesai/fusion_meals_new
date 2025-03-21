@@ -38,11 +38,18 @@ function RecipePageContent() {
     setLoading(true);
 
     try {
+      // Log the API URL to help debug issues
+      console.log('Using API URL:', process.env.NEXT_PUBLIC_API_URL || 'undefined');
+
+      // Define the API URL with fallbacks
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 
+                   'https://fusion-meals-new.onrender.com';
+
       // Set a longer timeout for the recipe generation request
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 120000); // 2-minute timeout
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/recipes/generate`, {
+      const response = await fetch(`${apiUrl}/recipes/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -75,11 +82,47 @@ function RecipePageContent() {
       if (error instanceof DOMException && error.name === 'AbortError') {
         toast.error('Recipe generation took too long. Please try again or try with simpler ingredients.');
       } else {
-        toast.error('Failed to generate recipe. Please check if the backend is running.');
+        // Create a mock recipe as fallback
+        const mockRecipe = generateMockRecipe();
+        setRecipe(mockRecipe);
+        setImageUrl('/images/fallback-recipe.jpg');
+        toast.error('Using demo recipe. Backend service is unavailable.');
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  // Function to generate a mock recipe when the backend is unavailable
+  const generateMockRecipe = () => {
+    return `
+🍴 **Recipe Name**: ${cuisine1}-${cuisine2} Fusion Demo Dish
+
+🛒 **Ingredients**:
+- **Vegetables**: Onions, bell peppers, garlic
+- **Proteins**: Chicken breast, tofu
+- **Spices & Other**: Salt, pepper, olive oil, soy sauce
+
+👩‍🍳 **Instructions**:
+1. Prepare all ingredients: chop vegetables and slice protein into bite-sized pieces.
+2. Heat olive oil in a pan over medium heat.
+3. Sauté garlic and onions until fragrant.
+4. Add protein and cook until golden brown.
+5. Add vegetables and cook until tender.
+6. Season with salt, pepper, and soy sauce to taste.
+7. Serve hot with your choice of side.
+
+⏰ **Cooking Time**: 30 minutes
+
+🔥 **Calories per Serving**: 320
+
+💪 **Macronutrients**:
+- Protein: 22g
+- Carbs: 15g
+- Fats: 18g
+
+🏅 **Health Score**: B
+    `;
   };
 
   return (

@@ -52,8 +52,9 @@ export async function POST(request: NextRequest) {
       backendRequest.preferences += ` (excluding: ${req.exclude.join(', ')})`;
     }
     
-    const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8001';
-    const response = await fetch(`${backendUrl}/meal-plans/generate`, {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001';
+    console.log('Using API URL for generate-meal-plan:', apiUrl);
+    const response = await fetch(`${apiUrl}/meal-plans/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

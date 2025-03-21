@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
     
     try {
       // Forward the request to the backend API
-      const response = await fetch(`${process.env.BACKEND_URL || 'http://127.0.0.1:8001'}/meal-prep/batch-cooking-plan`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001'}/meal-prep/batch-cooking-plan`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

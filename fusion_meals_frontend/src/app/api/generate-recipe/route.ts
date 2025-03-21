@@ -25,8 +25,9 @@ export async function POST(request: NextRequest) {
     
     try {
       // Forward the request to the backend API
-      const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8001';
-      const response = await fetch(`${backendUrl}/recipes/generate`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001';
+      console.log('Using API URL for generate-recipe:', apiUrl);
+      const response = await fetch(`${apiUrl}/recipes/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

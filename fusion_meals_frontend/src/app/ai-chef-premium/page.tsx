@@ -1203,30 +1203,30 @@ export default function AIChefPremium() {
             let recipesArray = null;
             
             // Option 1: Directly in premium_content
-            if (Array.isArray(recipeData.recipes)) {
-              recipesArray = recipeData.recipes;
+            if (Array.isArray((recipeData as any).recipes)) {
+              recipesArray = (recipeData as any).recipes;
               console.log('Found recipes directly in premium_content.recipes');
             } 
             // Option 2: In premium_content.curated_menu
-            else if (recipeData.curated_menu && Array.isArray(recipeData.curated_menu.recipes)) {
-              recipesArray = recipeData.curated_menu.recipes;
+            else if ((recipeData as any).curated_menu && Array.isArray((recipeData as any).curated_menu.recipes)) {
+              recipesArray = (recipeData as any).curated_menu.recipes;
               console.log('Found recipes in curated_menu.recipes');
             }
             // Option 3: In premium_content.recipe_collection
-            else if (recipeData.recipe_collection && Array.isArray(recipeData.recipe_collection)) {
-              recipesArray = recipeData.recipe_collection;
+            else if ((recipeData as any).recipe_collection && Array.isArray((recipeData as any).recipe_collection)) {
+              recipesArray = (recipeData as any).recipe_collection;
               console.log('Found recipes in recipe_collection');
             }
             // Option 4: In premium_content.curated_recipes (added based on actual API response)
-            else if (Array.isArray(recipeData.curated_recipes)) {
-              recipesArray = recipeData.curated_recipes;
+            else if (Array.isArray((recipeData as any).curated_recipes)) {
+              recipesArray = (recipeData as any).curated_recipes;
               console.log('Found recipes in curated_recipes');
             }
             
             // Store the recipes array for rendering
             if (recipesArray && recipesArray.length > 0) {
               hasRecipes = true;
-              recipeData.recipes = recipesArray; // Normalize the structure
+              (recipeData as any).recipes = recipesArray; // Normalize the structure
               console.log(`Found ${recipesArray.length} recipes:`, recipesArray);
             } else {
               console.error('Could not find a valid recipes array in the response');

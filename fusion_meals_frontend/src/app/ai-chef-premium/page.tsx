@@ -790,7 +790,10 @@ export default function AIChefPremium() {
                 <Box>
                   <Typography variant="h5" gutterBottom>Your Grocery List</Typography>
                   <Grid container spacing={3}>
-                    {Object.entries(content.grocery_list).map(([category, items]: [string, string[]], index: number) => (
+                    {Object.entries(content.grocery_list).map((entry, index) => {
+                      const category = entry[0];
+                      const items = entry[1] as string[];
+                      return (
                       <Grid item xs={12} md={4} key={index}>
                         <Card sx={{ height: '100%' }}>
                           <CardContent>
@@ -805,7 +808,7 @@ export default function AIChefPremium() {
                           </CardContent>
                         </Card>
                       </Grid>
-                    ))}
+                    )})}
                   </Grid>
                   
                   <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

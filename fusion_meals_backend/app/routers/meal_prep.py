@@ -60,24 +60,8 @@ async def create_batch_cooking_plan(request: MealPrepRequest):
         preferences_text = ", ".join(request.preferences) if request.preferences else "no specific preferences"
         equipment_text = ", ".join(request.equipment) if request.equipment else "basic kitchen equipment"
         
-        user_prompt = f"""
-        Create a detailed batch cooking plan for a busy professional with the following parameters:
-        - Available time for meal prep: {request.available_time} minutes
-        - Days available for cooking: {", ".join(request.cooking_days)}
-        - Number of servings: {request.servings}
-        - Dietary restrictions: {restrictions_text}
-        - Food preferences: {preferences_text}
-        - Cooking skill level: {request.skill_level}
-        - Available equipment: {equipment_text}
-        
-        Please provide:
-        1. A shopping list organized by section (produce, proteins, pantry items, etc.)
-        2. A detailed cooking plan with steps optimized for efficiency
-        3. Storage instructions for each prepared component
-        4. A weekly meal schedule showing what to eat each day
-        5. Quick assembly instructions for each meal
-        
-        Return the response as JSON with the following structure:
+        # Define the JSON template structure as raw string (not f-string)
+        json_template = r'''
         {
           "shopping_list": {
             "produce": ["item1", "item2"],
@@ -106,11 +90,32 @@ async def create_batch_cooking_plan(request: MealPrepRequest):
           ],
           "weekly_schedule": {
             "Monday": {"breakfast": "...", "lunch": "...", "dinner": "..."},
-            "Tuesday": {"breakfast": "...", "lunch": "...", "dinner": "..."},
+            "Tuesday": {"breakfast": "...", "lunch": "...", "dinner": "..."}
             // etc for each day of the week
           },
           "tips": ["tip1", "tip2", "tip3"]
         }
+        '''
+        
+        user_prompt = f"""
+        Create a detailed batch cooking plan for a busy professional with the following parameters:
+        - Available time for meal prep: {request.available_time} minutes
+        - Days available for cooking: {", ".join(request.cooking_days)}
+        - Number of servings: {request.servings}
+        - Dietary restrictions: {restrictions_text}
+        - Food preferences: {preferences_text}
+        - Cooking skill level: {request.skill_level}
+        - Available equipment: {equipment_text}
+        
+        Please provide:
+        1. A shopping list organized by section (produce, proteins, pantry items, etc.)
+        2. A detailed cooking plan with steps optimized for efficiency
+        3. Storage instructions for each prepared component
+        4. A weekly meal schedule showing what to eat each day
+        5. Quick assembly instructions for each meal
+        
+        Return the response as JSON with the following structure:
+        {json_template}
         """
 
         # Call OpenAI API
@@ -149,6 +154,32 @@ async def get_time_optimized_recipes(request: TimeOptimizedRecipeRequest):
         preferences_text = ", ".join(request.preferences) if request.preferences else "no specific preferences"
         meal_type_text = f"for {request.meal_type}" if request.meal_type else "for any meal"
         
+        # Define the JSON template structure as raw string (not f-string)
+        json_template = r'''
+        {
+          "recipes": [
+            {
+              "name": "Recipe Name",
+              "description": "Brief description",
+              "ingredients": ["1 cup of X", "2 tablespoons of Y"],
+              "instructions": [
+                {
+                  "step": 1,
+                  "description": "...",
+                  "time": "X minutes",
+                  "is_active": true/false
+                }
+              ],
+              "active_time": "X minutes",
+              "passive_time": "X minutes",
+              "total_time": "X minutes",
+              "nutrition_info": {"calories": X, "protein": "Xg", "carbs": "Xg", "fat": "Xg"},
+              "efficiency_tips": ["tip1", "tip2"]
+            }
+          ]
+        }
+        '''
+        
         user_prompt = f"""
         Provide 3 recipe options that require no more than {request.max_active_time} minutes of active cooking time {meal_type_text}.
         - Number of servings: {request.servings}
@@ -165,28 +196,7 @@ async def get_time_optimized_recipes(request: TimeOptimizedRecipeRequest):
         7. Tips for making the recipe even more efficient
         
         Return the response as JSON with the following structure:
-        {{
-          "recipes": [
-            {{
-              "name": "Recipe Name",
-              "description": "Brief description",
-              "ingredients": ["1 cup of X", "2 tablespoons of Y"],
-              "instructions": [
-                {{
-                  "step": 1,
-                  "description": "...",
-                  "time": "X minutes",
-                  "is_active": true/false
-                }}
-              ],
-              "active_time": "X minutes",
-              "passive_time": "X minutes",
-              "total_time": "X minutes",
-              "nutrition_info": {{"calories": X, "protein": "Xg", "carbs": "Xg", "fat": "Xg"}},
-              "efficiency_tips": ["tip1", "tip2"]
-            }}
-          ]
-        }}
+        {json_template}
         """
 
         # Call OpenAI API
@@ -225,6 +235,26 @@ async def transform_leftovers(request: LeftoverTransformRequest):
         original_dish_text = f"The original dish was: {request.original_dish}. " if request.original_dish else ""
         meal_type_text = f"for {request.meal_type}" if request.meal_type else "for any meal"
         
+        # Define the JSON template structure as raw string (not f-string)
+        json_template = r'''
+        {
+          "transformations": [
+            {
+              "name": "New Dish Name",
+              "description": "Brief description",
+              "leftover_ingredients_used": ["ingredient1", "ingredient2"],
+              "additional_ingredients": ["ingredient1", "ingredient2"],
+              "instructions": [
+                {"step": 1, "description": "..."},
+                {"step": 2, "description": "..."}
+              ],
+              "prep_time": "X minutes",
+              "tips": ["tip1", "tip2"]
+            }
+          ]
+        }
+        '''
+        
         user_prompt = f"""
         Create 2-3 creative recipe ideas to transform these leftover ingredients {meal_type_text}:
         - Leftover ingredients: {", ".join(request.leftover_ingredients)}
@@ -240,26 +270,7 @@ async def transform_leftovers(request: LeftoverTransformRequest):
         5. Tips for customization
         
         Return the response as JSON with the following structure:
-        {{
-          "transformations": [
-            {{
-              "name": "New Dish Name",
-              "description": "Brief description",
-              "leftover_ingredients_used": ["ingredient1", "ingredient2"],
-              "additional_ingredients": ["ingredient1", "ingredient2"],
-              "instructions": [
-                {{
-                  "step": 1,
-                  "description": "..."
-                }}
-              ],
-              "prep_time": "X minutes",
-              "cooking_time": "X minutes",
-              "customization_tips": ["tip1", "tip2"]
-            }}
-          ],
-          "general_tips": ["tip for using leftovers effectively", "storage recommendation"]
-        }}
+        {json_template}
         """
 
         # Call OpenAI API

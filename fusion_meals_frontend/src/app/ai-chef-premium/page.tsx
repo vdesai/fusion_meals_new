@@ -606,7 +606,7 @@ export default function AIChefPremium() {
                           </Grid>
                           <Grid item xs={12} md={2}>
                             <Typography variant="subtitle1" color="text.secondary">Snacks</Typography>
-                            {day.snacks && day.snacks.map((snack, snackIndex) => (
+                            {day.snacks && day.snacks.map((snack: any, snackIndex: number) => (
                               <Typography key={snackIndex} variant="body2">{snack.name}</Typography>
                             ))}
                           </Grid>
@@ -790,7 +790,7 @@ export default function AIChefPremium() {
                 <Box>
                   <Typography variant="h5" gutterBottom>Your Grocery List</Typography>
                   <Grid container spacing={3}>
-                    {Object.entries(content.grocery_list).map(([category, items], index) => (
+                    {Object.entries(content.grocery_list).map(([category, items]: [string, string[]], index: number) => (
                       <Grid item xs={12} md={4} key={index}>
                         <Card sx={{ height: '100%' }}>
                           <CardContent>
@@ -798,7 +798,7 @@ export default function AIChefPremium() {
                               {category}
                             </Typography>
                             <Box component="ul" sx={{ pl: 2 }}>
-                              {items && items.map((item, i) => (
+                              {items && items.map((item: string, i: number) => (
                                 <Typography component="li" key={i}>{item}</Typography>
                               ))}
                             </Box>
@@ -829,7 +829,7 @@ export default function AIChefPremium() {
                     <CardContent>
                       <Typography variant="h6" color="primary">Prep Day: {content.meal_prep_guide.day}</Typography>
                       <Box component="ol" sx={{ pl: 2, mt: 2 }}>
-                        {content.meal_prep_guide.instructions && content.meal_prep_guide.instructions.map((instruction, i) => (
+                        {content.meal_prep_guide.instructions && content.meal_prep_guide.instructions.map((instruction: string, i: number) => (
                           <Typography component="li" key={i} sx={{ mb: 1 }}>{instruction}</Typography>
                         ))}
                       </Box>
@@ -838,7 +838,7 @@ export default function AIChefPremium() {
                       
                       <Typography variant="h6" color="primary">Storage Tips</Typography>
                       <Box component="ul" sx={{ pl: 2, mt: 2 }}>
-                        {content.meal_prep_guide.storage_tips && content.meal_prep_guide.storage_tips.map((tip, i) => (
+                        {content.meal_prep_guide.storage_tips && content.meal_prep_guide.storage_tips.map((tip: string, i: number) => (
                           <Typography component="li" key={i} sx={{ mb: 1 }}>{tip}</Typography>
                         ))}
                       </Box>
@@ -1874,7 +1874,7 @@ export default function AIChefPremium() {
       <Box sx={{ mt: 4 }}>
         <Typography variant="h6" gutterBottom>You might also like</Typography>
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
-          {response.suggestions.map((suggestion, index) => (
+          {response.suggestions.map((suggestion: string, index: number) => (
             <Chip 
               key={index} 
               label={suggestion} 

@@ -2,13 +2,11 @@
 
 import React from 'react';
 import Link from 'next/link';
-import Navbar from '@/components/Navbar';
 import { Star, Smile, Users } from 'lucide-react';
 
 const AboutPage = () => {
   return (
     <div>
-      <Navbar />
       <main className="p-8 max-w-5xl mx-auto">
         <section className="bg-green-100 dark:bg-gray-800 rounded-lg p-8 shadow-lg transition-all duration-300">
           <h1 className="text-4xl font-extrabold text-green-700 dark:text-green-300 mb-4 text-center">
@@ -53,7 +51,7 @@ const AboutPage = () => {
             Explore endless recipe ideas and meal plans tailored just for you and your loved ones.
           </p>
           <Link
-            href="/recipes"
+            href="/generate-recipe"
             className="bg-white text-green-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-full shadow transition-all duration-300"
           >
             🚀 Start Generating Now

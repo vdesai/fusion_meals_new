@@ -14,25 +14,30 @@ export default function MealPlanPage() {
   const generateMealPlan = async () => {
     setLoading(true);
     try {
-      // Log the API URL to help debug issues
-      console.log('Using API URL:', process.env.NEXT_PUBLIC_API_URL || 'undefined');
-
-      // Define the API URL with fallbacks
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 
-                   'https://fusion-meals-new.onrender.com';
-                   
-      const response = await axios.post(`${apiUrl}/meal-plans/generate`, {
+      // Use the local Next.js API route instead of calling the backend directly
+      const response = await axios.post('/api/generate-meal-plan', {
+        days: 7,
+        people: 4,
         diet_type: diet,
-        preferences,
+        preferences: [preferences],
       });
-      setMealPlan(response.data.meal_plan);
+      
+      // The response format is different than the backend directly
+      if (response.data && response.data.days) {
+        // For compatibility with MealPlanCard, convert structured data back to markdown
+        const markdownMealPlan = convertToMarkdown(response.data, diet);
+        setMealPlan(markdownMealPlan);
+      } else {
+        setMealPlan(response.data);
+      }
+      
       toast.success('Meal Plan generated successfully! 🎉');
     } catch (error) {
       console.error('Error generating meal plan:', error);
-      // Use a mock meal plan when backend is unavailable
+      // Use a mock meal plan when API is unavailable
       const mockMealPlan = generateMockMealPlan();
       setMealPlan(mockMealPlan);
-      toast.success('Using demo meal plan. Backend service is unavailable 😊');
+      toast.success('Using demo meal plan. Service is unavailable 😊');
     } finally {
       setLoading(false);
     }
@@ -83,6 +88,67 @@ export default function MealPlanPage() {
 - **Lunch**: Quinoa bowl with roasted vegetables and tahini dressing
 - **Dinner**: Grilled shrimp skewers with mixed vegetables
 - **Snack**: Banana with peanut butter`;
+  };
+
+  // Define types for the meal plan structure
+  interface Meal {
+    name: string;
+    recipe_link?: string;
+    ingredients?: string[];
+    prep_time?: string;
+    cook_time?: string;
+  }
+
+  interface DayPlan {
+    breakfast: Meal;
+    lunch: Meal;
+    dinner: Meal;
+    snacks: Meal[];
+  }
+
+  interface MealPlanStructure {
+    days: DayPlan[];
+    grocery_list?: Record<string, string[]>;
+  }
+  
+  // Helper function to convert structured meal plan to markdown format
+  const convertToMarkdown = (mealPlan: MealPlanStructure, dietType: string): string => {
+    if (!mealPlan || !mealPlan.days || mealPlan.days.length === 0) {
+      return generateMockMealPlan();
+    }
+    
+    let markdown = `# ${dietType} Meal Plan for 7 Days\n\n`;
+    
+    // Days of the week
+    const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    
+    // Convert each day to markdown
+    mealPlan.days.forEach((day: DayPlan, index: number) => {
+      const dayName = daysOfWeek[index % daysOfWeek.length];
+      markdown += `## ${dayName}\n`;
+      
+      if (day.breakfast) {
+        markdown += `- **Breakfast**: ${day.breakfast.name}\n`;
+      }
+      
+      if (day.lunch) {
+        markdown += `- **Lunch**: ${day.lunch.name}\n`;
+      }
+      
+      if (day.dinner) {
+        markdown += `- **Dinner**: ${day.dinner.name}\n`;
+      }
+      
+      if (day.snacks && day.snacks.length > 0) {
+        day.snacks.forEach((snack: Meal) => {
+          markdown += `- **Snack**: ${snack.name}\n`;
+        });
+      }
+      
+      markdown += '\n';
+    });
+    
+    return markdown;
   };
 
   return (

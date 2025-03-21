@@ -38,27 +38,21 @@ function RecipePageContent() {
     setLoading(true);
 
     try {
-      // Log the API URL to help debug issues
-      console.log('Using API URL:', process.env.NEXT_PUBLIC_API_URL || 'undefined');
-
-      // Define the API URL with fallbacks
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 
-                   'https://fusion-meals-new.onrender.com';
-
       // Set a longer timeout for the recipe generation request
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 120000); // 2-minute timeout
 
-      const response = await fetch(`${apiUrl}/recipes/generate`, {
+      // Use the Next.js API route instead of calling the backend directly
+      const response = await fetch('/api/generate-recipe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           ingredients,
-          cuisine1,
-          cuisine2,
-          dietary_preference: dietaryPreference,
+          cuisine_type: cuisine1,
+          meal_type: cuisine2,
+          dietary_restrictions: dietaryPreference,
           serving_size: servingSize,
           cooking_skill: cookingSkill,
           is_premium: isPremium
@@ -73,9 +67,13 @@ function RecipePageContent() {
       }
 
       const data = await response.json();
-      setRecipe(data.recipe);
-      setImageUrl(data.image_url);
-      toast.success('Recipe generated successfully!');
+      
+      // This data structure comes from our local API route
+      if (data) {
+        setRecipe(data.description + "\n\n" + data.ingredients.join("\n") + "\n\n" + data.instructions.join("\n"));
+        setImageUrl(data.image_url || '/images/fallback-recipe.jpg');
+        toast.success('Recipe generated successfully!');
+      }
     } catch (error) {
       console.error('Error generating recipe:', error);
       

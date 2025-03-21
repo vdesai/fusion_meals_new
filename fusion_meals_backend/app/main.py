@@ -1,19 +1,25 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import fusion_recipe, meal_plan, email, grocery, ingredient_substitution, recipe_scaling, recipe_analysis, recipe_sharing, ai_chef, global_cuisine, meal_prep, pantry
+import os
 
 app = FastAPI()
 
 app.include_router(email.router, prefix="/email", tags=["Email"])  # ✅ Include router
 
+# Get allowed origins from environment or use defaults
+allowed_origins = os.environ.get(
+    "ALLOWED_ORIGINS", 
+    "http://localhost:3000,http://127.0.0.1:3000,https://fusion-meals.vercel.app"
+).split(",")
 
-# ✅ CORS Middleware
+# ✅ CORS Middleware with environment-aware configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
 )
 
 # ✅ Router inclusion

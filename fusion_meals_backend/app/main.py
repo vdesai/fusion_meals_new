@@ -10,16 +10,16 @@ app.include_router(email.router, prefix="/email", tags=["Email"])  # ✅ Include
 # Get allowed origins from environment or use defaults
 allowed_origins = os.environ.get(
     "ALLOWED_ORIGINS", 
-    "http://localhost:3000,http://127.0.0.1:3000,https://fusion-meals.vercel.app"
+    "http://localhost:3000,http://127.0.0.1:3000,https://fusion-meals.vercel.app,https://fusion-meals-new.vercel.app,https://*.vercel.app"
 ).split(",")
 
 # ✅ CORS Middleware with environment-aware configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=["*"],  # Allow all origins during development
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
 )
 
 # ✅ Router inclusion

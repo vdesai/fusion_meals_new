@@ -38,6 +38,10 @@ function RecipePageContent() {
     setLoading(true);
 
     try {
+      // Set a longer timeout for the recipe generation request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2-minute timeout
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/recipes/generate`, {
         method: 'POST',
         headers: {
@@ -52,10 +56,13 @@ function RecipePageContent() {
           cooking_skill: cookingSkill,
           is_premium: isPremium
         }),
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId); // Clear the timeout if the request completes
+
       if (!response.ok) {
-        throw new Error('Failed to generate recipe');
+        throw new Error(`Failed to generate recipe: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -63,8 +70,13 @@ function RecipePageContent() {
       setImageUrl(data.image_url);
       toast.success('Recipe generated successfully!');
     } catch (error) {
-      console.error('Error:', error);
-      toast.error('Failed to generate recipe. Please try again.');
+      console.error('Error generating recipe:', error);
+      
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        toast.error('Recipe generation took too long. Please try again or try with simpler ingredients.');
+      } else {
+        toast.error('Failed to generate recipe. Please check if the backend is running.');
+      }
     } finally {
       setLoading(false);
     }

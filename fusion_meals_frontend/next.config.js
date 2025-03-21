@@ -46,39 +46,55 @@ const nextConfig = {
         }
       ]
     } else {
+      // Get the backend URL from environment variables
+      const backendUrl = process.env.BACKEND_URL || 'https://fusion-meals-backend.onrender.com';
+      console.log(`Using backend URL: ${backendUrl}`);
+      
       // Production rewrites - use deployed backend URL
       return [
         {
           source: '/api/recipes/:path*',
-          destination: `${process.env.BACKEND_URL || 'https://your-backend-url.com'}/recipes/:path*`,
+          destination: `${backendUrl}/recipes/:path*`,
         },
         {
           source: '/api/meal-plans/:path*',
-          destination: `${process.env.BACKEND_URL || 'https://your-backend-url.com'}/meal-plans/:path*`,
+          destination: `${backendUrl}/meal-plans/:path*`,
         },
         {
           source: '/api/grocery/:path*',
-          destination: `${process.env.BACKEND_URL || 'https://your-backend-url.com'}/grocery/:path*`,
+          destination: `${backendUrl}/grocery/:path*`,
         },
         {
           source: '/api/email/:path*',
-          destination: `${process.env.BACKEND_URL || 'https://your-backend-url.com'}/email/:path*`,
+          destination: `${backendUrl}/email/:path*`,
         },
         {
           source: '/api/ingredient-substitution/:path*',
-          destination: `${process.env.BACKEND_URL || 'https://your-backend-url.com'}/ingredient-substitution/:path*`,
+          destination: `${backendUrl}/ingredient-substitution/:path*`,
         },
         {
           source: '/api/recipe-scaling/:path*',
-          destination: `${process.env.BACKEND_URL || 'https://your-backend-url.com'}/recipe-scaling/:path*`,
+          destination: `${backendUrl}/recipe-scaling/:path*`,
         },
         {
           source: '/api/recipe-analysis/:path*',
-          destination: `${process.env.BACKEND_URL || 'https://your-backend-url.com'}/recipe-analysis/:path*`,
+          destination: `${backendUrl}/recipe-analysis/:path*`,
         },
         {
           source: '/api/recipe-sharing/:path*',
-          destination: `${process.env.BACKEND_URL || 'https://your-backend-url.com'}/recipe-sharing/:path*`,
+          destination: `${backendUrl}/recipe-sharing/:path*`,
+        },
+        {
+          source: '/api/ai-chef/:path*',
+          destination: `${backendUrl}/ai-chef/:path*`,
+        },
+        {
+          source: '/api/global-cuisine/:path*',
+          destination: `${backendUrl}/global-cuisine/:path*`,
+        },
+        {
+          source: '/api/meal-prep/:path*',
+          destination: `${backendUrl}/meal-prep/:path*`,
         }
       ]
     }

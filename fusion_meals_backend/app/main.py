@@ -31,17 +31,27 @@ app.include_router(email.router, prefix="/email", tags=["Email"])  # ✅ Include
 # Get allowed origins from environment or use defaults
 allowed_origins = os.environ.get(
     "ALLOWED_ORIGINS", 
-    "http://localhost:3000,http://127.0.0.1:3000,https://fusion-meals.vercel.app,https://fusion-meals-new.vercel.app,https://*.vercel.app"
+    "http://localhost:3000,http://127.0.0.1:3000,https://fusion-meals.vercel.app,https://fusion-meals-new.vercel.app,https://*.vercel.app,https://fusion-meals-new.vercel.app"
 ).split(",")
 
-# ✅ CORS Middleware with environment-aware configuration
+# CORS Middleware enhanced configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins during development
+    allow_origins=["*"],  # Allow all origins for now - you can restrict later
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicitly list OPTIONS
     allow_headers=["*"],  # Allow all headers
+    expose_headers=["*"],
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
+
+# Add OPTIONS handler for all routes
+@app.options("/{rest_of_path:path}")
+async def options_route(rest_of_path: str):
+    """
+    Handle OPTIONS requests to support CORS preflight requests
+    """
+    return {}  # Return empty JSON with 200 status code
 
 # ✅ Router inclusion
 app.include_router(fusion_recipe.router, prefix="/recipes", tags=["Fusion Recipe"])

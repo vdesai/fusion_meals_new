@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
     
     // Log the transformed request
     console.log("[API] Transformed request:", JSON.stringify(backendRequest).substring(0, 100) + "...");
+    console.log("[API] Full request body:", JSON.stringify(backendRequest));
     
     try {
       // Forward the request to the backend API - always use the Render URL in production
@@ -111,9 +112,19 @@ export async function POST(request: NextRequest) {
             });
             
             if (response.ok) {
+              console.log('[API] Request succeeded with status:', response.status);
               break; // Success, exit the retry loop
             } else {
               console.log(`[API] Request failed with status: ${response.status}, retrying...`);
+              
+              // Try to log the error response for debugging
+              try {
+                const errorText = await response.text();
+                console.log('[API] Error response body:', errorText);
+              } catch (error) {
+                console.log('[API] Could not read error response body:', error);
+              }
+              
               retries++;
               
               if (retries <= MAX_RETRIES) {

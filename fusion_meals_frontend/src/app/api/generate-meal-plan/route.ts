@@ -11,8 +11,11 @@ interface FrontendMealPlanRequest {
 
 // Backend interface (what the backend API expects)
 interface BackendMealPlanRequest {
-  diet_type: string;
-  preferences: string;
+  ingredients: string;
+  cuisine1: string;
+  cuisine2: string;
+  dietary_preference: string;
+  is_meal_plan: boolean;
 }
 
 interface Meal {
@@ -46,17 +49,21 @@ export async function POST(request: NextRequest) {
     
     // Transform the request to match what the backend expects
     const backendRequest: BackendMealPlanRequest = {
-      diet_type: req.diet_type || 'balanced',
-      preferences: Array.isArray(req.preferences) ? req.preferences.join(', ') : (typeof req.preferences === 'string' ? req.preferences : '')
+      ingredients: Array.isArray(req.preferences) ? req.preferences.join(', ') : (typeof req.preferences === 'string' ? req.preferences : ''),
+      cuisine1: 'International',
+      cuisine2: 'Fusion',
+      dietary_preference: req.diet_type || 'balanced',
+      is_meal_plan: true
     };
     
-    // Add exclude items to preferences if they exist
+    // Add exclude items to ingredients if they exist
     if (req.exclude && Array.isArray(req.exclude) && req.exclude.length > 0) {
-      backendRequest.preferences += ` (excluding: ${req.exclude.join(', ')})`;
+      backendRequest.ingredients += ` (excluding: ${req.exclude.join(', ')})`;
     }
     
     // Log the transformed request
     console.log("[API] Transformed request:", JSON.stringify(backendRequest).substring(0, 100) + "...");
+    console.log("[API] Full request body:", JSON.stringify(backendRequest));
     
     try {
       // Forward the request to the backend API - always use the Render URL in production
@@ -135,17 +142,24 @@ export async function POST(request: NextRequest) {
               headers: {
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify({
-                ...backendRequest,
-                is_meal_plan: true // Add a flag to indicate this is a meal plan request
-              }),
+              body: JSON.stringify(backendRequest),
               signal: controller.signal,
             });
             
             if (response.ok) {
+              console.log('[API] Request succeeded with status:', response.status);
               break; // Success, exit the retry loop
             } else {
               console.log(`[API] Request failed with status: ${response.status}, retrying...`);
+              
+              // Try to log the error response for debugging
+              try {
+                const errorText = await response.text();
+                console.log('[API] Error response body:', errorText);
+              } catch (error) {
+                console.log('[API] Could not read error response body:', error);
+              }
+              
               retries++;
               
               if (retries <= MAX_RETRIES) {

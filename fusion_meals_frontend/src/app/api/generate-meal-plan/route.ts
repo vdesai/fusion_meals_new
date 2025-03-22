@@ -237,6 +237,29 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error('[API] Error generating meal plan:', error);
+    
+    // Check if this is an abort error (timeout)
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return NextResponse.json(
+        { 
+          detail: 'Request timed out. The backend service (hosted on Render free tier) takes longer than expected to start up. Please try again in 30-60 seconds.',
+          error: 'Timeout Error'
+        },
+        { status: 504 }
+      );
+    }
+    
+    // Check if this error contains the word "timeout"
+    if (error instanceof Error && error.message.toLowerCase().includes('timeout')) {
+      return NextResponse.json(
+        { 
+          detail: 'Request timed out. The backend service (hosted on Render free tier) takes longer than expected to start up. Please try again in 30-60 seconds.',
+          error: 'Timeout Error'
+        },
+        { status: 504 }
+      );
+    }
+    
     return NextResponse.json(
       { 
         detail: 'Failed to generate meal plan. The backend service (hosted on Render free tier) may be experiencing a cold start delay or temporary downtime. Please try again in a minute.',

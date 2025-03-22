@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { CalendarDays, Utensils, User, XCircle, Sparkles, AlertTriangle, Brain } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 // Define interface for the meal plan response
 interface Meal {
@@ -67,6 +68,11 @@ export default function MealPlanPage() {
     setLoading(true);
     setError(null);
 
+    toast.loading(
+      "Generating your meal plan... This may take up to 60 seconds because we're using Render's free tier which has cold starts.",
+      { duration: 15000 }
+    );
+
     try {
       const response = await fetch('/api/generate-meal-plan', {
         method: 'POST',
@@ -83,6 +89,11 @@ export default function MealPlanPage() {
       });
 
       if (!response.ok) {
+        if (response.status === 504) {
+          throw new Error(
+            "Request timed out. Our backend is hosted on Render's free tier which has cold starts. Please try again."
+          );
+        }
         throw new Error('Failed to generate meal plan');
       }
 
@@ -91,6 +102,7 @@ export default function MealPlanPage() {
       setActiveDay(0);
       setActiveTab('plan');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      toast.success("Your meal plan is ready!");
     } catch (error) {
       console.error('Error generating meal plan:', error);
       setError('Error generating meal plan. Please try again.');

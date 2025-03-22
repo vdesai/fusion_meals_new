@@ -20,12 +20,10 @@ export default function MealPlanPage() {
     try {
       console.log('Submitting meal plan request for diet:', diet, 'preferences:', preferences); 
       
-      // Set up abort controller with a more aggressive timeout for Render's limitations
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000); // 12-second timeout
-      
       try {
         console.log('Sending request to local API route: /api/generate-meal-plan');
+        toast.loading('This may take up to 60 seconds because we use Render free tier...', { id: toastId, duration: 10000 });
+        
         const response = await fetch('/api/generate-meal-plan', {
           method: 'POST',
           headers: {
@@ -37,10 +35,7 @@ export default function MealPlanPage() {
             diet_type: diet,
             preferences: preferences ? [preferences] : [],
           }),
-          signal: controller.signal
         });
-
-        clearTimeout(timeoutId);
 
         if (!response.ok) {
           console.error(`API response error: ${response.status}`);
@@ -71,7 +66,6 @@ export default function MealPlanPage() {
         }
       } catch (apiError: Error | DOMException | unknown) {
         console.error('API route error:', apiError);
-        clearTimeout(timeoutId);
         
         // Check if this was a timeout error
         if (apiError instanceof DOMException && apiError.name === 'AbortError') {

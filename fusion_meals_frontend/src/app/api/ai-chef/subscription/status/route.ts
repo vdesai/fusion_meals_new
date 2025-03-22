@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
     const sessionCookie = request.cookies.get('session_id');
     
     // Forward the request to the backend API
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/ai-chef/subscription/status`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'https://fusion-meals-new.onrender.com'}`}/ai-chef/subscription/status`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

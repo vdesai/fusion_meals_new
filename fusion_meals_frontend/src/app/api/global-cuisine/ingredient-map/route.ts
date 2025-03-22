@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   try {
     // Forward the request to the backend API
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001'}/global-cuisine/ingredient-map`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'https://fusion-meals-new.onrender.com'}`}/global-cuisine/ingredient-map`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
     
     try {
       // Forward the request to the backend API
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001'}/meal-prep/time-optimized-recipes`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'https://fusion-meals-new.onrender.com'}`}/meal-prep/time-optimized-recipes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

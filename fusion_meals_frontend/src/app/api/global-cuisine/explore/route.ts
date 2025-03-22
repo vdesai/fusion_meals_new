@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const region = searchParams.get('region');
     
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'https://fusion-meals-new.onrender.com'}`;
     
     // If a region is specified, get the specific cuisine data
     if (region) {
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
   try {
     const body: CuisineExploreRequest = await request.json();
     
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_API_URL || 'https://fusion-meals-new.onrender.com'}`;
     const response = await fetch(`${backendUrl}/global-cuisine/explore`, {
       method: 'POST',
       headers: {

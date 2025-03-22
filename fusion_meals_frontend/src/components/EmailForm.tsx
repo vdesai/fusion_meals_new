@@ -7,7 +7,7 @@ const EmailForm = ({ content }: { content: string }) => {
 
   const sendEmail = async () => {
     try {
-      const response = await axios.post('http://127.0.0.1:8000/email/send', {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'https://fusion-meals-new.onrender.com'}/email/send`, {
         email: email,
         content: content,
       });

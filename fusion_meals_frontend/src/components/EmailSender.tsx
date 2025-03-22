@@ -10,7 +10,7 @@ const EmailSender = ({ content }: { content: string }) => {
   const handleSendEmail = async () => {
     setLoading(true);
     try {
-      const response = await axios.post('http://127.0.0.1:8000/email/send', {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'https://fusion-meals-new.onrender.com'}/email/send`, {
         email,
         subject,
         content,

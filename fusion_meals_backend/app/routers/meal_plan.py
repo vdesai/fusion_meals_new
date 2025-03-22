@@ -30,10 +30,19 @@ class MealPlanRequest(BaseModel):
 class MealPlanResponse(BaseModel):
     meal_plan: str
 
+@router.options("/generate")
+async def options_generate_meal_plan():
+    """
+    Handle OPTIONS requests for the /generate endpoint
+    This is needed for CORS preflight requests from browsers
+    """
+    return {}  # Return empty response with 200 status
+
 # ✅ Generate meal plan endpoint
 @router.post("/generate", response_model=MealPlanResponse)
 async def generate_meal_plan(req: MealPlanRequest):
     try:
+        print(f"Meal plan request received: {req}")
         prompt = f"""
         You are a dietician specializing in healthy meal planning.
 

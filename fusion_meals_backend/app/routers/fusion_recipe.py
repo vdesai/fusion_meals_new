@@ -92,9 +92,18 @@ popular_cuisine_combos = [
     ("Ethiopian", "Italian")
 ]
 
+@router.options("/generate")
+async def options_generate_fusion_recipe():
+    """
+    Handle OPTIONS requests for the /generate endpoint
+    This is needed for CORS preflight requests from browsers
+    """
+    return {}  # Return empty response with 200 status
+
 @router.post("/generate", response_model=RecipeResponse)
 async def generate_fusion_recipe(req: RecipeRequest):
     try:
+        print(f"Recipe request received: {req}")
         diet_instruction = diet_instructions.get(req.dietary_preference, "No dietary restrictions.")
         
         # Base prompt for all recipes

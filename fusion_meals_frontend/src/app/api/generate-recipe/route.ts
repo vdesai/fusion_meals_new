@@ -44,9 +44,8 @@ export async function POST(request: NextRequest) {
     console.log("[API] Full request body:", JSON.stringify(backendRequest));
     
     try {
-      // Forward the request to the backend API - always use the Render URL in production
-      // The local URL is only used for development
-      const apiUrl = 'https://fusion-meals-new.onrender.com';
+      // Forward the request to the backend API - get URL from environment variable
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://fusion-meals-new.onrender.com';
       console.log('[API] Using API URL for generate-recipe:', apiUrl);
       
       // Increase timeout to 60 seconds to account for free tier cold starts
@@ -77,9 +76,23 @@ export async function POST(request: NextRequest) {
               
               if (wakeupResponse.ok) {
                 console.log('[API] Backend successfully woken up');
+                console.log('[API] Wake-up response status:', wakeupResponse.status);
+                try {
+                  const wakeupData = await wakeupResponse.text();
+                  console.log('[API] Wake-up response text:', wakeupData.substring(0, 200));
+                } catch (parseError) {
+                  console.log('[API] Could not parse wake-up response:', parseError);
+                }
                 break;
               } else {
                 console.log(`[API] Wake-up attempt ${i+1} returned status: ${wakeupResponse.status}`);
+                try {
+                  const errorText = await wakeupResponse.text();
+                  console.log(`[API] Wake-up error response body:`, errorText.substring(0, 200));
+                } catch (readError) {
+                  console.log('[API] Could not read wake-up error response:', readError);
+                }
+                
                 // Wait before next attempt
                 if (i < 2) {
                   console.log('[API] Waiting before next wake-up attempt...');
@@ -115,6 +128,11 @@ export async function POST(request: NextRequest) {
               await new Promise(resolve => setTimeout(resolve, 5000 * retries));
             }
             
+            console.log('[API] Sending main request to:', `${apiUrl}/recipes/generate`);
+            console.log('[API] Request headers:', JSON.stringify({
+              'Content-Type': 'application/json',
+            }));
+            
             response = await fetch(`${apiUrl}/recipes/generate`, {
               method: 'POST',
               headers: {
@@ -123,6 +141,8 @@ export async function POST(request: NextRequest) {
               body: JSON.stringify(backendRequest),
               signal: controller.signal,
             });
+            
+            console.log('[API] Response received, status:', response.status);
             
             if (response.ok) {
               console.log('[API] Request succeeded with status:', response.status);
@@ -184,7 +204,17 @@ export async function POST(request: NextRequest) {
         console.log("[API] Backend response status:", response.status);
       
         // Process the successful response
-        const data = await response.json();
+        let data;
+        try {
+          const textResponse = await response.text();
+          console.log('[API] Raw response text:', textResponse.substring(0, 200));
+          data = JSON.parse(textResponse);
+          console.log("[API] Successfully parsed response JSON");
+        } catch (parseError) {
+          console.error('[API] Error parsing response JSON:', parseError);
+          throw parseError;
+        }
+        
         console.log("[API] Successfully received backend data");
         
         // Transform the backend response format to what the frontend expects
@@ -270,7 +300,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       return NextResponse.json(
         { 
-          detail: 'Request timed out. The backend service (hosted on Render free tier) takes longer than expected to start up. Please try again in 30-60 seconds.',
+          detail: 'Request timed out. The backend service takes longer than expected to respond. Please try again.',
           error: 'Timeout Error'
         },
         { status: 504 }
@@ -281,7 +311,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error && error.message.toLowerCase().includes('timeout')) {
       return NextResponse.json(
         { 
-          detail: 'Request timed out. The backend service (hosted on Render free tier) takes longer than expected to start up. Please try again in 30-60 seconds.',
+          detail: 'Request timed out. The backend service takes longer than expected to respond. Please try again.',
           error: 'Timeout Error'
         },
         { status: 504 }
@@ -290,10 +320,10 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json(
       { 
-        detail: 'Failed to generate recipe. The backend service (hosted on Render free tier) may be experiencing a cold start delay or temporary downtime. Please try again in a minute.',
+        detail: 'Failed to generate recipe. Please check the server logs for more details.',
         error: error instanceof Error ? error.message : String(error)
       },
-      { status: 504 }
+      { status: 500 }
     );
   }
 } 

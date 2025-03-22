@@ -64,38 +64,70 @@ export async function POST(request: NextRequest) {
       const apiUrl = 'https://fusion-meals-new.onrender.com';
       console.log('[API] Using API URL for generate-meal-plan:', apiUrl);
       
-      // Increase timeout to 30 seconds to account for free tier cold starts
+      // Increase timeout to 60 seconds to account for free tier cold starts
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30-second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60-second timeout
       
       try {
         console.log('[API] Sending request to backend recipes/generate endpoint');
         console.log('[API] Full backend URL:', `${apiUrl}/recipes/generate`);
         
-        // Ping the backend to wake it up if it's sleeping
+        // Ping the backend to wake it up if it's sleeping - with longer timeout
         try {
           console.log('[API] Waking up backend at:', `${apiUrl}/recipes/`);
-          await fetch(`${apiUrl}/recipes/`, {
-            method: 'GET',
-            // Shorter timeout for the wake-up request
-            signal: AbortSignal.timeout(5000)
-          }).catch(() => {
-            console.log('[API] Wake-up ping complete or timed out, proceeding with main request');
-          });
+          
+          // Try multiple wake-up attempts with longer timeouts
+          for (let i = 0; i < 3; i++) {
+            try {
+              const wakeupController = new AbortController();
+              const wakeupTimeout = setTimeout(() => wakeupController.abort(), 10000); // 10-second timeout for wake-up
+              
+              console.log(`[API] Wake-up attempt ${i+1}/3`);
+              const wakeupResponse = await fetch(`${apiUrl}/recipes/`, {
+                method: 'GET',
+                signal: wakeupController.signal
+              });
+              
+              clearTimeout(wakeupTimeout);
+              
+              if (wakeupResponse.ok) {
+                console.log('[API] Backend successfully woken up');
+                break;
+              } else {
+                console.log(`[API] Wake-up attempt ${i+1} returned status: ${wakeupResponse.status}`);
+                // Wait before next attempt
+                if (i < 2) {
+                  console.log('[API] Waiting before next wake-up attempt...');
+                  await new Promise(resolve => setTimeout(resolve, 5000));
+                }
+              }
+            } catch (wakeupError) {
+              console.log(`[API] Wake-up attempt ${i+1} error:`, wakeupError);
+              // Wait before next attempt
+              if (i < 2) {
+                console.log('[API] Waiting before next wake-up attempt...');
+                await new Promise(resolve => setTimeout(resolve, 5000));
+              }
+            }
+          }
+          
+          console.log('[API] Wake-up sequence complete, proceeding with main request');
         } catch (wakingError) {
-          console.log('[API] Error during backend wake-up:', wakingError);
+          console.log('[API] Error during backend wake-up sequence:', wakingError);
           // Continue anyway, the main request will still try
         }
         
         // Make the main request with retry logic
         let response = null;
         let retries = 0;
-        const MAX_RETRIES = 2;
+        const MAX_RETRIES = 3;
         
         while (retries <= MAX_RETRIES) {
           try {
             if (retries > 0) {
               console.log(`[API] Retry attempt ${retries}/${MAX_RETRIES}`);
+              // Add longer delays between retries
+              await new Promise(resolve => setTimeout(resolve, 5000 * retries));
             }
             
             response = await fetch(`${apiUrl}/recipes/generate`, {
@@ -117,8 +149,8 @@ export async function POST(request: NextRequest) {
               retries++;
               
               if (retries <= MAX_RETRIES) {
-                // Add exponential backoff
-                await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+                // Add exponential backoff with longer delays
+                await new Promise(resolve => setTimeout(resolve, 5000 * retries));
               }
             }
           } catch (fetchRetryError) {
@@ -126,8 +158,8 @@ export async function POST(request: NextRequest) {
             retries++;
             
             if (retries <= MAX_RETRIES) {
-              // Add exponential backoff
-              await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+              // Add exponential backoff with longer delays
+              await new Promise(resolve => setTimeout(resolve, 5000 * retries));
             }
           }
         }
@@ -169,8 +201,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[API] Error generating meal plan:', error);
     return NextResponse.json(
-      { detail: 'Failed to generate meal plan. Please try again. If this issue persists, the backend service may be experiencing high load or temporary downtime.' },
-      { status: 500 }
+      { 
+        detail: 'Failed to generate meal plan. The backend service (hosted on Render free tier) may be experiencing a cold start delay or temporary downtime. Please try again in a minute.',
+        error: error instanceof Error ? error.message : String(error)
+      },
+      { status: 504 }
     );
   }
 }

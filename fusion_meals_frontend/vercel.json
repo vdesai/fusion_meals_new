@@ -7,6 +7,11 @@
   "env": {
     "NEXT_PUBLIC_API_URL": "https://fusion-meals-new.onrender.com"
   },
+  "functions": {
+    "api/**/*": {
+      "maxDuration": 300
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",
@@ -22,6 +27,19 @@
         {
           "key": "X-XSS-Protection",
           "value": "1; mode=block"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Connection",
+          "value": "keep-alive"
+        },
+        {
+          "key": "Keep-Alive",
+          "value": "timeout=300"
         }
       ]
     }

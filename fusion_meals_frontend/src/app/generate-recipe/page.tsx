@@ -53,6 +53,25 @@ export default function GenerateRecipePage() {
     setError(null);
     
     try {
+      // Start by showing a message to the user
+      setGeneratedRecipe({
+        title: "Creating your recipe...",
+        description: "Our AI chef is working on your recipe. This may take up to 60 seconds with Render's free tier.",
+        ingredients: ["Gathering ingredients..."],
+        instructions: ["Preparing your custom recipe..."],
+        prep_time: "...",
+        cook_time: "...",
+        servings: 0,
+        difficulty: "...",
+        tags: [],
+        nutrition_info: {
+          calories: 0,
+          protein: "...",
+          carbs: "...",
+          fat: "..."
+        }
+      });
+      
       const response = await fetch('/api/generate-recipe', {
         method: 'POST',
         headers: {
@@ -67,7 +86,11 @@ export default function GenerateRecipePage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate recipe');
+        if (response.status === 504) {
+          throw new Error('The recipe generation is taking longer than expected. This is common with Render\'s free tier - please try again in a minute.');
+        } else {
+          throw new Error('Failed to generate recipe');
+        }
       }
 
       const data = await response.json();
@@ -75,7 +98,10 @@ export default function GenerateRecipePage() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       console.error('Error generating recipe:', error);
-      setError('Failed to generate recipe. Please try again.');
+      setError(error instanceof Error ? error.message : 'Failed to generate recipe. Please try again.');
+      
+      // Reset the generated recipe if there was an error
+      setGeneratedRecipe(null);
     } finally {
       setLoading(false);
     }

@@ -454,6 +454,8 @@ function convertRecipeToMealPlan(recipeMarkdown: string, numDays: number): MealP
 
   // Extract recipe name and ingredients from markdown
   const recipeName = recipeMarkdown.match(/\*\*Recipe Name\*\*\s*:\s*(.*?)(?:\n|$)/i)?.[1] || 'Fusion Recipe';
+  const cuisineMatch = recipeName.match(/(Indian|Italian|Mexican|Chinese|Thai|Japanese|Mediterranean|French|Greek|Spanish|American|Asian|African|Middle Eastern|fusion)/i);
+  const cuisineType = cuisineMatch ? cuisineMatch[1] : 'International';
   
   // Extract ingredients section
   const ingredientsMatch = recipeMarkdown.match(/\*\*Ingredients\*\*\s*:([\s\S]*?)(?:\n\n|$)/i);
@@ -463,43 +465,219 @@ function convertRecipeToMealPlan(recipeMarkdown: string, numDays: number): MealP
   const ingredientLines = ingredientsText.split('\n').filter(line => line.trim().startsWith('-'));
   const ingredients = ingredientLines.map(line => line.replace(/^-\s*/, '').trim());
 
-  // Create grocery list categories
-  mealPlan.grocery_list = {
-    'Main Ingredients': ingredients.filter(i => !i.includes('optional')),
-    'Optional Ingredients': ingredients.filter(i => i.includes('optional'))
+  // Define grocery list categories with type safety
+  const groceryCategories: Record<string, string[]> = {
+    'Proteins': ingredients.filter(i => 
+      /chicken|beef|pork|lamb|fish|tofu|tempeh|seitan|beans|lentils|chickpeas|eggs|paneer|cheese/i.test(i)),
+    'Vegetables': ingredients.filter(i => 
+      /carrot|onion|tomato|pepper|spinach|kale|lettuce|broccoli|cauliflower|zucchini|eggplant|potato|garlic|ginger|vegetables/i.test(i)),
+    'Fruits': ingredients.filter(i => 
+      /apple|banana|orange|mango|berry|berries|fruit|lemon|lime|avocado/i.test(i)),
+    'Grains & Starches': ingredients.filter(i => 
+      /rice|pasta|noodle|bread|flour|oats|quinoa|couscous|tortilla|grain/i.test(i)),
+    'Dairy': ingredients.filter(i => 
+      /milk|cream|yogurt|cheese|butter|ghee|curd/i.test(i) && !/almond milk|coconut milk|soy milk/i.test(i)),
+    'Herbs & Spices': ingredients.filter(i => 
+      /salt|pepper|cumin|coriander|basil|oregano|thyme|rosemary|parsley|cilantro|cinnamon|cardamom|herb|spice/i.test(i)),
+    'Oils & Condiments': ingredients.filter(i => 
+      /oil|vinegar|sauce|mayonnaise|mustard|ketchup|syrup|honey|seasoning/i.test(i)),
+    'Other Ingredients': [] as string[]
   };
 
-  // Generate a simple meal plan
-  for (let i = 0; i < numDays; i++) {
+  // Add any remaining ingredients to 'Other Ingredients'
+  const categorizedIngredients = Object.values(groceryCategories).flat();
+  groceryCategories['Other Ingredients'] = ingredients.filter(i => 
+    !categorizedIngredients.includes(i) && !i.includes('optional'));
+  
+  // Add optional ingredients category if any exist
+  const optionalIngredients = ingredients.filter(i => i.includes('optional'));
+  if (optionalIngredients.length > 0) {
+    groceryCategories['Optional Ingredients'] = optionalIngredients;
+  }
+
+  // Remove empty categories
+  Object.keys(groceryCategories).forEach(key => {
+    if (groceryCategories[key].length === 0) {
+      delete groceryCategories[key];
+    } else {
+      // Clean up the ingredient text (remove optional mentions, etc.)
+      groceryCategories[key] = groceryCategories[key].map(i => 
+        i.replace(/\(optional\)/i, '').trim());
+    }
+  });
+
+  // Add common breakfast ingredients based on breakfast options
+  groceryCategories['Breakfast Essentials'] = [
+    'Eggs',
+    'Milk',
+    'Bread',
+    'Oats',
+    'Yogurt',
+    'Fresh fruits',
+    'Coffee/Tea'
+  ];
+
+  // Add cuisine-specific ingredients
+  if (/indian/i.test(cuisineType)) {
+    if (!groceryCategories['Spices & Herbs']) {
+      groceryCategories['Spices & Herbs'] = [];
+    }
+    groceryCategories['Spices & Herbs'] = [
+      ...groceryCategories['Spices & Herbs'],
+      'Garam masala',
+      'Turmeric',
+      'Cumin seeds',
+      'Mustard seeds',
+      'Coriander powder'
+    ];
+  } else if (/italian/i.test(cuisineType)) {
+    if (!groceryCategories['Herbs & Spices']) {
+      groceryCategories['Herbs & Spices'] = [];
+    }
+    groceryCategories['Herbs & Spices'] = [
+      ...groceryCategories['Herbs & Spices'],
+      'Basil',
+      'Oregano',
+      'Parsley',
+      'Italian seasoning'
+    ];
+  } else if (/asian/i.test(cuisineType)) {
+    if (!groceryCategories['Condiments']) {
+      groceryCategories['Condiments'] = [];
+    }
+    groceryCategories['Condiments'] = [
+      ...groceryCategories['Condiments'],
+      'Soy sauce',
+      'Rice vinegar',
+      'Sesame oil',
+      'Sriracha/hot sauce'
+    ];
+  }
+
+  // Add basic snack ingredients if not already included
+  const snackIngredients = [
+    'Mixed nuts',
+    'Dried fruits',
+    'Hummus',
+    'Carrot sticks',
+    'Cucumber',
+    'Bell peppers',
+    'Greek yogurt',
+    'Honey',
+    'Granola'
+  ];
+  
+  if (!groceryCategories['Snacks']) {
+    groceryCategories['Snacks'] = [];
+  }
+  
+  snackIngredients.forEach(item => {
+    // Only add if not already in other categories
+    const isAlreadyInList = Object.values(groceryCategories).some(category => 
+      category.some(ingredient => ingredient.toLowerCase().includes(item.toLowerCase()))
+    );
+    
+    if (!isAlreadyInList) {
+      groceryCategories['Snacks'].push(item);
+    }
+  });
+
+  mealPlan.grocery_list = groceryCategories;
+
+  // Generate breakfast options based on cuisine
+  const breakfastOptions = [
+    // International options
+    'Overnight Oats with Fresh Fruit',
+    'Greek Yogurt Parfait with Granola',
+    'Avocado Toast with Poached Eggs',
+    'Protein Smoothie Bowl',
+    'Whole Grain Cereal with Fruit',
+    // Cuisine-specific options
+  ];
+
+  // Add cuisine-specific breakfast options
+  if (/indian/i.test(cuisineType)) {
+    breakfastOptions.push('Masala Dosa with Coconut Chutney', 'Poha with Vegetables', 'Paneer Paratha', 'Upma with Mixed Vegetables');
+  } else if (/italian/i.test(cuisineType)) {
+    breakfastOptions.push('Italian Frittata with Vegetables', 'Ricotta Toast with Honey', 'Cornetto with Espresso');
+  } else if (/mexican/i.test(cuisineType)) {
+    breakfastOptions.push('Huevos Rancheros', 'Breakfast Burrito', 'Chilaquiles with Salsa');
+  } else if (/asian|chinese|japanese|thai/i.test(cuisineType)) {
+    breakfastOptions.push('Congee with Toppings', 'Steamed Buns with Tea', 'Rice Porridge with Vegetables');
+  }
+
+  // Generate a diverse meal plan
+  for (let dayIndex = 0; dayIndex < numDays; dayIndex++) {
+    // Create a breakfast with rotation
+    const breakfast = {
+      name: breakfastOptions[dayIndex % breakfastOptions.length],
+      recipe_link: '#',
+      ingredients: generateIngredientsFromName(breakfastOptions[dayIndex % breakfastOptions.length]),
+      prep_time: '10 mins',
+      cook_time: '15 mins',
+    };
+
+    // Create lunch and dinner with the main recipe but alternate
+    const lunchName = dayIndex % 3 === 0 ? 
+      recipeName : 
+      (dayIndex % 3 === 1 ? `Leftover ${recipeName}` : `${cuisineType} Inspired Salad`);
+    
+    const dinnerName = dayIndex % 3 === 0 ? 
+      `Variation of ${recipeName}` : 
+      (dayIndex % 3 === 1 ? recipeName : `Simple ${cuisineType} Bowl`);
+
+    // Create different snack options
+    const snackOptions = [
+      {
+        name: 'Fresh Fruit & Nut Mix',
+        recipe_link: '#',
+        ingredients: ['Mixed nuts', 'Dried fruits', 'Fresh seasonal fruit'],
+        prep_time: '5 mins',
+        cook_time: '0 mins',
+      },
+      {
+        name: 'Veggie Sticks with Hummus',
+        recipe_link: '#',
+        ingredients: ['Carrot sticks', 'Cucumber', 'Bell pepper', 'Hummus'],
+        prep_time: '5 mins',
+        cook_time: '0 mins',
+      },
+      {
+        name: 'Greek Yogurt with Honey',
+        recipe_link: '#',
+        ingredients: ['Greek yogurt', 'Honey', 'Granola'],
+        prep_time: '2 mins',
+        cook_time: '0 mins',
+      }
+    ];
+
     const dayPlan: DayPlan = {
-      breakfast: createEmptyMeal(),
+      breakfast: breakfast,
       lunch: {
-        name: i % 2 === 0 ? recipeName : `Leftover ${recipeName}`,
+        name: lunchName,
         recipe_link: '#',
         ingredients: ingredients,
-        prep_time: '15 mins',
-        cook_time: '30 mins',
+        prep_time: dayIndex % 3 === 1 ? '5 mins' : '15 mins', // Quicker for leftovers
+        cook_time: dayIndex % 3 === 1 ? '5 mins' : '25 mins',
       },
       dinner: {
-        name: i % 2 === 1 ? recipeName : `Variation of ${recipeName}`,
+        name: dinnerName,
         recipe_link: '#',
         ingredients: ingredients,
         prep_time: '20 mins',
-        cook_time: '40 mins',
+        cook_time: '30 mins',
       },
       snacks: [
-        {
-          name: 'Fruit & Nuts Mix',
-          recipe_link: '#',
-          ingredients: ['Mixed nuts', 'Dried fruits'],
-          prep_time: '5 mins',
-          cook_time: '0 mins',
-        }
+        snackOptions[dayIndex % snackOptions.length]
       ]
     };
     
     mealPlan.days.push(dayPlan);
   }
+
+  // Log the structure of the generated meal plan
+  console.log("[API] Generated meal plan with days:", mealPlan.days.length);
+  console.log("[API] Grocery list categories:", Object.keys(mealPlan.grocery_list));
 
   return mealPlan;
 } 

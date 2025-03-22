@@ -8,7 +8,7 @@
     "NEXT_PUBLIC_API_URL": "https://fusion-meals-new.onrender.com"
   },
   "functions": {
-    "api/**/*": {
+    "src/app/api/**/*": {
       "maxDuration": 300
     }
   },

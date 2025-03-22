@@ -26,6 +26,19 @@ export async function POST(request: NextRequest) {
       dietary_preference: Array.isArray(body.dietary_restrictions) ? body.dietary_restrictions[0] : (body.dietary_restrictions || 'None')
     };
     
+    // Add optional fields if present
+    if (body.is_premium !== undefined) {
+      backendRequest.is_premium = !!body.is_premium;
+    }
+    
+    if (body.serving_size !== undefined && !isNaN(Number(body.serving_size))) {
+      backendRequest.serving_size = Number(body.serving_size);
+    }
+    
+    if (body.cooking_skill) {
+      backendRequest.cooking_skill = body.cooking_skill;
+    }
+    
     // Log the transformed request
     console.log("[API] Transformed request:", JSON.stringify(backendRequest).substring(0, 100) + "...");
     console.log("[API] Full request body:", JSON.stringify(backendRequest));
@@ -121,6 +134,25 @@ export async function POST(request: NextRequest) {
               try {
                 const errorText = await response.text();
                 console.log('[API] Error response body:', errorText);
+                
+                // If it's a validation error (422), return more specific information
+                if (response.status === 422) {
+                  try {
+                    // Try to parse the error as JSON
+                    const errorData = JSON.parse(errorText);
+                    console.log('[API] Validation error details:', errorData);
+                    
+                    // If we've reached max retries with a 422 error, throw with specific message
+                    if (retries >= MAX_RETRIES) {
+                      throw new Error(`Backend validation error: ${JSON.stringify(errorData)}`);
+                    }
+                  } catch {
+                    // If not valid JSON, just use the text
+                    if (retries >= MAX_RETRIES) {
+                      throw new Error(`Backend validation error: ${errorText}`);
+                    }
+                  }
+                }
               } catch (error) {
                 console.log('[API] Could not read error response body:', error);
               }

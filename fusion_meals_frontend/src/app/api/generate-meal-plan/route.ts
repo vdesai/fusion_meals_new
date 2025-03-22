@@ -16,6 +16,8 @@ interface BackendMealPlanRequest {
   cuisine2: string;
   dietary_preference: string;
   is_meal_plan: boolean;
+  days?: number;
+  people?: number;
 }
 
 interface Meal {
@@ -53,7 +55,9 @@ export async function POST(request: NextRequest) {
       cuisine1: 'International',
       cuisine2: 'Fusion',
       dietary_preference: req.diet_type || 'balanced',
-      is_meal_plan: true
+      is_meal_plan: true,
+      days: req.days || 7,
+      people: req.people || 4
     };
     
     // Add exclude items to ingredients if they exist
@@ -156,6 +160,25 @@ export async function POST(request: NextRequest) {
               try {
                 const errorText = await response.text();
                 console.log('[API] Error response body:', errorText);
+                
+                // If it's a validation error (422), return more specific information
+                if (response.status === 422) {
+                  try {
+                    // Try to parse the error as JSON
+                    const errorData = JSON.parse(errorText);
+                    console.log('[API] Validation error details:', errorData);
+                    
+                    // If we've reached max retries with a 422 error, throw with specific message
+                    if (retries >= MAX_RETRIES) {
+                      throw new Error(`Backend validation error: ${JSON.stringify(errorData)}`);
+                    }
+                  } catch {
+                    // If not valid JSON, just use the text
+                    if (retries >= MAX_RETRIES) {
+                      throw new Error(`Backend validation error: ${errorText}`);
+                    }
+                  }
+                }
               } catch (error) {
                 console.log('[API] Could not read error response body:', error);
               }

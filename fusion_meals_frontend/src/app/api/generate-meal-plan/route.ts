@@ -253,6 +253,17 @@ export async function POST(request: NextRequest) {
             console.error('[API] Error parsing meal plan markdown:', parseError);
             throw parseError;
           }
+        } else if (data && data.recipe) {
+          // Handle case where backend returns a recipe instead of a meal plan
+          try {
+            console.log("[API] Backend returned a recipe instead of meal plan, converting format");
+            // Convert the recipe to a simple meal plan format
+            const simpleMealPlan = convertRecipeToMealPlan(data.recipe, req.days || 7);
+            return NextResponse.json(simpleMealPlan);
+          } catch (convertError) {
+            console.error('[API] Error converting recipe to meal plan:', convertError);
+            throw convertError;
+          }
         } else {
           throw new Error("No meal plan data in response");
         }
@@ -431,4 +442,64 @@ function generateIngredientsFromName(mealName: string): string[] {
   ingredients.push('Olive oil');
   
   return ingredients;
+}
+
+// New function to convert a recipe to a meal plan format
+function convertRecipeToMealPlan(recipeMarkdown: string, numDays: number): MealPlan {
+  // Initialize meal plan structure
+  const mealPlan: MealPlan = {
+    days: [],
+    grocery_list: {}
+  };
+
+  // Extract recipe name and ingredients from markdown
+  const recipeName = recipeMarkdown.match(/\*\*Recipe Name\*\*\s*:\s*(.*?)(?:\n|$)/i)?.[1] || 'Fusion Recipe';
+  
+  // Extract ingredients section
+  const ingredientsMatch = recipeMarkdown.match(/\*\*Ingredients\*\*\s*:([\s\S]*?)(?:\n\n|$)/i);
+  const ingredientsText = ingredientsMatch ? ingredientsMatch[1] : '';
+  
+  // Parse ingredients into categories
+  const ingredientLines = ingredientsText.split('\n').filter(line => line.trim().startsWith('-'));
+  const ingredients = ingredientLines.map(line => line.replace(/^-\s*/, '').trim());
+
+  // Create grocery list categories
+  mealPlan.grocery_list = {
+    'Main Ingredients': ingredients.filter(i => !i.includes('optional')),
+    'Optional Ingredients': ingredients.filter(i => i.includes('optional'))
+  };
+
+  // Generate a simple meal plan
+  for (let i = 0; i < numDays; i++) {
+    const dayPlan: DayPlan = {
+      breakfast: createEmptyMeal(),
+      lunch: {
+        name: i % 2 === 0 ? recipeName : `Leftover ${recipeName}`,
+        recipe_link: '#',
+        ingredients: ingredients,
+        prep_time: '15 mins',
+        cook_time: '30 mins',
+      },
+      dinner: {
+        name: i % 2 === 1 ? recipeName : `Variation of ${recipeName}`,
+        recipe_link: '#',
+        ingredients: ingredients,
+        prep_time: '20 mins',
+        cook_time: '40 mins',
+      },
+      snacks: [
+        {
+          name: 'Fruit & Nuts Mix',
+          recipe_link: '#',
+          ingredients: ['Mixed nuts', 'Dried fruits'],
+          prep_time: '5 mins',
+          cook_time: '0 mins',
+        }
+      ]
+    };
+    
+    mealPlan.days.push(dayPlan);
+  }
+
+  return mealPlan;
 } 

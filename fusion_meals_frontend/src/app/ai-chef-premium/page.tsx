@@ -249,7 +249,7 @@ export default function AIChefPremium() {
           break;
       }
       
-      console.log('Sending request:', requestObj);
+      console.log('Sending request to AI Chef API:', requestObj);
       
       // Make API request
       const response = await fetch('/api/ai-chef/premium/ai-chef', {
@@ -264,21 +264,17 @@ export default function AIChefPremium() {
       const data = await response.json();
       
       if (!response.ok) {
-        // Check if it's a subscription error
-        if (response.status === 403 || response.status === 401) {
-          setSubscriptionError(true);
-          setError("Premium subscription required. Please upgrade your account to access this feature.");
-        } else {
-          setError(data.detail || 'An error occurred while processing your request');
-        }
+        console.error('API response error:', response.status, data);
+        setError(data.detail || 'An error occurred while processing your request');
         return;
       }
       
+      console.log('AI Chef API response received:', data);
       setResponse(data);
       setResultTabs(0); // Reset results tab
     } catch (err) {
-      console.error('Error in API request:', err);
-      setError('An error occurred while communicating with the server');
+      console.error('Error in AI Chef API request:', err);
+      setError('An error occurred while communicating with the server. Please try again.');
     } finally {
       setLoading(false);
     }

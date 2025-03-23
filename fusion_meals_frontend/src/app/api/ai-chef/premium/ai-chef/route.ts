@@ -1,25 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Feature flag to force using mock data (for testing)
+const FORCE_MOCK_DATA = false;
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    // Get the session cookie to pass to the backend
-    const sessionCookie = request.cookies.get('session_id');
+    // If we're forcing mock data, skip trying to connect to the backend
+    if (FORCE_MOCK_DATA) {
+      console.log("Force mock data enabled, returning demo response");
+      return generateDemoResponse(body);
+    }
     
     // Try to connect to the backend first
     try {
       console.log("Attempting to connect to backend API for AI Chef:", body.request_type);
       
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://fusion-meals-new.onrender.com';
+      console.log("Using backend URL:", backendUrl);
+      
+      // Connect to backend without requiring authentication
       const response = await fetch(`${backendUrl}/ai-chef/premium/ai-chef`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          ...(sessionCookie && { 'Cookie': `session_id=${sessionCookie.value}` })
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(body),
+        // Set a reasonable timeout
+        signal: AbortSignal.timeout(10000) // 10 seconds timeout
       });
+      
+      console.log("Backend response status:", response.status);
       
       // If the backend responds successfully, return the backend response
       if (response.ok) {
@@ -27,20 +39,9 @@ export async function POST(request: NextRequest) {
         console.log("Backend API response received successfully");
         return NextResponse.json(data);
       } else {
-        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-        console.log("Backend API error:", errorData);
-        
-        // If the error is authentication related and no session exists, fall back to demo mode
-        if ((response.status === 401 || response.status === 403) && !sessionCookie) {
-          console.log("No session found, falling back to demo response");
-          return generateDemoResponse(body);
-        }
-        
-        // Otherwise, return the error from the backend
-        return NextResponse.json(
-          { detail: errorData.detail || 'Failed to process request' }, 
-          { status: response.status }
-        );
+        console.log("Backend returned error status:", response.status);
+        // Fall back to demo response for any backend error
+        return generateDemoResponse(body);
       }
     } catch (backendError) {
       console.error("Error connecting to backend API:", backendError);

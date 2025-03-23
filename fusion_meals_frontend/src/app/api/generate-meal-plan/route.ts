@@ -464,33 +464,62 @@ function convertRecipeToMealPlan(recipeMarkdown: string, numDays: number): MealP
   // Parse ingredients into categories
   const ingredientLines = ingredientsText.split('\n').filter(line => line.trim().startsWith('-'));
   const ingredients = ingredientLines.map(line => line.replace(/^-\s*/, '').trim());
+  
+  // Check for dietary preferences in the recipe name or content
+  const isVegetarian = /vegetarian|veg/i.test(recipeName) || /vegetarian|veg/i.test(recipeMarkdown);
+  const isVegan = /vegan/i.test(recipeName) || /vegan/i.test(recipeMarkdown);
+  
+  // Filter function to remove non-vegetarian items if vegetarian is requested
+  const dietaryFilter = (ingredient: string): boolean => {
+    const lowerIngredient = ingredient.toLowerCase();
+    
+    // For vegetarian diet, filter out meat products
+    if (isVegetarian || isVegan) {
+      if (/\b(chicken|beef|pork|lamb|fish|shrimp|prawn|seafood|meat|bacon|ham|turkey|sausage)\b/i.test(lowerIngredient)) {
+        return false; // Filter out meat products
+      }
+    }
+    
+    // For vegan diet, also filter out dairy and eggs
+    if (isVegan) {
+      if (/\b(milk|cream|cheese|butter|ghee|yogurt|curd|paneer|egg|honey)\b/i.test(lowerIngredient) && 
+          !/\b(almond milk|soy milk|oat milk|coconut milk|plant-based)\b/i.test(lowerIngredient)) {
+        return false; // Filter out animal products
+      }
+    }
+    
+    return true; // Keep the ingredient
+  };
+  
+  // Apply dietary filter to ingredients
+  const filteredIngredients = ingredients.filter(dietaryFilter);
 
   // Define grocery list categories with type safety
   const groceryCategories: Record<string, string[]> = {
-    'Proteins': ingredients.filter(i => 
-      /chicken|beef|pork|lamb|fish|tofu|tempeh|seitan|beans|lentils|chickpeas|eggs|paneer|cheese/i.test(i)),
-    'Vegetables': ingredients.filter(i => 
+    'Proteins': filteredIngredients.filter(i => 
+      /tofu|tempeh|seitan|beans|lentils|chickpeas|paneer|cheese/i.test(i)),
+    'Vegetables': filteredIngredients.filter(i => 
       /carrot|onion|tomato|pepper|spinach|kale|lettuce|broccoli|cauliflower|zucchini|eggplant|potato|garlic|ginger|vegetables/i.test(i)),
-    'Fruits': ingredients.filter(i => 
+    'Fruits': filteredIngredients.filter(i => 
       /apple|banana|orange|mango|berry|berries|fruit|lemon|lime|avocado/i.test(i)),
-    'Grains & Starches': ingredients.filter(i => 
+    'Grains & Starches': filteredIngredients.filter(i => 
       /rice|pasta|noodle|bread|flour|oats|quinoa|couscous|tortilla|grain/i.test(i)),
-    'Dairy': ingredients.filter(i => 
+    'Dairy': isVegan ? [] : filteredIngredients.filter(i => 
       /milk|cream|yogurt|cheese|butter|ghee|curd/i.test(i) && !/almond milk|coconut milk|soy milk/i.test(i)),
-    'Herbs & Spices': ingredients.filter(i => 
+    'Herbs & Spices': filteredIngredients.filter(i => 
       /salt|pepper|cumin|coriander|basil|oregano|thyme|rosemary|parsley|cilantro|cinnamon|cardamom|herb|spice/i.test(i)),
-    'Oils & Condiments': ingredients.filter(i => 
+    'Oils & Condiments': filteredIngredients.filter(i => 
       /oil|vinegar|sauce|mayonnaise|mustard|ketchup|syrup|honey|seasoning/i.test(i)),
     'Other Ingredients': [] as string[]
   };
 
   // Add any remaining ingredients to 'Other Ingredients'
   const categorizedIngredients = Object.values(groceryCategories).flat();
-  groceryCategories['Other Ingredients'] = ingredients.filter(i => 
+  groceryCategories['Other Ingredients'] = filteredIngredients.filter(i => 
     !categorizedIngredients.includes(i) && !i.includes('optional'));
   
   // Add optional ingredients category if any exist
-  const optionalIngredients = ingredients.filter(i => i.includes('optional'));
+  const optionalIngredients = filteredIngredients.filter(i => i.includes('optional'));
   if (optionalIngredients.length > 0) {
     groceryCategories['Optional Ingredients'] = optionalIngredients;
   }
@@ -506,16 +535,22 @@ function convertRecipeToMealPlan(recipeMarkdown: string, numDays: number): MealP
     }
   });
 
-  // Add common breakfast ingredients based on breakfast options
-  groceryCategories['Breakfast Essentials'] = [
-    'Eggs',
-    'Milk',
+  // Add common breakfast ingredients based on breakfast options and dietary preferences
+  const breakfastEssentials = [
     'Bread',
     'Oats',
-    'Yogurt',
     'Fresh fruits',
     'Coffee/Tea'
   ];
+  
+  // Add non-vegan breakfast items if appropriate
+  if (!isVegan) {
+    breakfastEssentials.push('Eggs', 'Milk', 'Yogurt');
+  } else {
+    breakfastEssentials.push('Plant-based milk', 'Plant-based yogurt');
+  }
+  
+  groceryCategories['Breakfast Essentials'] = breakfastEssentials;
 
   // Add cuisine-specific ingredients
   if (/indian/i.test(cuisineType)) {
@@ -530,6 +565,19 @@ function convertRecipeToMealPlan(recipeMarkdown: string, numDays: number): MealP
       'Mustard seeds',
       'Coriander powder'
     ];
+    
+    // Add vegetarian Indian protein sources
+    if (isVegetarian && !groceryCategories['Proteins']) {
+      groceryCategories['Proteins'] = [];
+    }
+    if (isVegetarian && groceryCategories['Proteins']) {
+      const vegetarianIndianProteins = ['Paneer', 'Chickpeas', 'Lentils', 'Tofu'];
+      groceryCategories['Proteins'] = [
+        ...groceryCategories['Proteins'],
+        ...vegetarianIndianProteins.filter(p => !groceryCategories['Proteins'].includes(p))
+      ];
+    }
+    
   } else if (/italian/i.test(cuisineType)) {
     if (!groceryCategories['Herbs & Spices']) {
       groceryCategories['Herbs & Spices'] = [];
@@ -541,6 +589,27 @@ function convertRecipeToMealPlan(recipeMarkdown: string, numDays: number): MealP
       'Parsley',
       'Italian seasoning'
     ];
+    
+    // Add vegetarian Italian protein sources
+    if (isVegetarian && !groceryCategories['Proteins']) {
+      groceryCategories['Proteins'] = [];
+    }
+    if (isVegetarian && groceryCategories['Proteins']) {
+      const vegetarianItalianProteins = ['White beans', 'Chickpeas', 'Ricotta cheese', 'Mozzarella'];
+      if (!isVegan) {
+        groceryCategories['Proteins'] = [
+          ...groceryCategories['Proteins'],
+          ...vegetarianItalianProteins.filter(p => !groceryCategories['Proteins'].includes(p))
+        ];
+      } else {
+        // Only add vegan proteins
+        groceryCategories['Proteins'] = [
+          ...groceryCategories['Proteins'],
+          'White beans', 'Chickpeas'
+        ].filter((value, index, self) => self.indexOf(value) === index); // Remove duplicates
+      }
+    }
+    
   } else if (/asian/i.test(cuisineType)) {
     if (!groceryCategories['Condiments']) {
       groceryCategories['Condiments'] = [];
@@ -552,9 +621,21 @@ function convertRecipeToMealPlan(recipeMarkdown: string, numDays: number): MealP
       'Sesame oil',
       'Sriracha/hot sauce'
     ];
+    
+    // Add vegetarian Asian protein sources
+    if (isVegetarian && !groceryCategories['Proteins']) {
+      groceryCategories['Proteins'] = [];
+    }
+    if (isVegetarian && groceryCategories['Proteins']) {
+      const vegetarianAsianProteins = ['Tofu', 'Tempeh', 'Edamame', 'Seitan'];
+      groceryCategories['Proteins'] = [
+        ...groceryCategories['Proteins'],
+        ...vegetarianAsianProteins.filter(p => !groceryCategories['Proteins'].includes(p))
+      ];
+    }
   }
 
-  // Add basic snack ingredients if not already included
+  // Add basic snack ingredients if not already included, respecting dietary preferences
   const snackIngredients = [
     'Mixed nuts',
     'Dried fruits',
@@ -562,10 +643,14 @@ function convertRecipeToMealPlan(recipeMarkdown: string, numDays: number): MealP
     'Carrot sticks',
     'Cucumber',
     'Bell peppers',
-    'Greek yogurt',
-    'Honey',
-    'Granola'
   ];
+  
+  // Add non-vegan snacks if appropriate
+  if (!isVegan) {
+    snackIngredients.push('Greek yogurt', 'Honey', 'Granola');
+  } else {
+    snackIngredients.push('Plant-based yogurt', 'Maple syrup', 'Vegan granola');
+  }
   
   if (!groceryCategories['Snacks']) {
     groceryCategories['Snacks'] = [];
@@ -584,24 +669,46 @@ function convertRecipeToMealPlan(recipeMarkdown: string, numDays: number): MealP
 
   mealPlan.grocery_list = groceryCategories;
 
-  // Generate breakfast options based on cuisine
+  // Generate breakfast options based on cuisine and dietary preferences
   const breakfastOptions = [
-    // International options
+    // International options that work for vegetarians and vegans
     'Overnight Oats with Fresh Fruit',
-    'Greek Yogurt Parfait with Granola',
-    'Avocado Toast with Poached Eggs',
-    'Protein Smoothie Bowl',
     'Whole Grain Cereal with Fruit',
-    // Cuisine-specific options
   ];
+  
+  // Add non-vegan breakfast options if appropriate
+  if (!isVegan) {
+    breakfastOptions.push(
+      'Greek Yogurt Parfait with Granola',
+      'Avocado Toast with Poached Eggs',
+      'Protein Smoothie Bowl'
+    );
+  } else {
+    breakfastOptions.push(
+      'Plant-based Yogurt Parfait',
+      'Avocado Toast with Roasted Tomatoes',
+      'Vegan Protein Smoothie Bowl'
+    );
+  }
 
   // Add cuisine-specific breakfast options
   if (/indian/i.test(cuisineType)) {
-    breakfastOptions.push('Masala Dosa with Coconut Chutney', 'Poha with Vegetables', 'Paneer Paratha', 'Upma with Mixed Vegetables');
+    if (!isVegan) {
+      breakfastOptions.push('Masala Dosa with Coconut Chutney', 'Paneer Paratha');
+    }
+    breakfastOptions.push('Poha with Vegetables', 'Upma with Mixed Vegetables');
   } else if (/italian/i.test(cuisineType)) {
-    breakfastOptions.push('Italian Frittata with Vegetables', 'Ricotta Toast with Honey', 'Cornetto with Espresso');
+    if (!isVegan) {
+      breakfastOptions.push('Italian Frittata with Vegetables', 'Ricotta Toast with Honey');
+    }
+    breakfastOptions.push('Italian Toast with Olive Oil and Tomatoes', 'Cornetto with Espresso');
   } else if (/mexican/i.test(cuisineType)) {
-    breakfastOptions.push('Huevos Rancheros', 'Breakfast Burrito', 'Chilaquiles with Salsa');
+    if (!isVegan) {
+      breakfastOptions.push('Huevos Rancheros', 'Breakfast Burrito');
+    } else {
+      breakfastOptions.push('Vegan Breakfast Burrito', 'Mexican Tofu Scramble');
+    }
+    breakfastOptions.push('Chilaquiles with Salsa');
   } else if (/asian|chinese|japanese|thai/i.test(cuisineType)) {
     breakfastOptions.push('Congee with Toppings', 'Steamed Buns with Tea', 'Rice Porridge with Vegetables');
   }
@@ -626,8 +733,30 @@ function convertRecipeToMealPlan(recipeMarkdown: string, numDays: number): MealP
       `Variation of ${recipeName}` : 
       (dayIndex % 3 === 1 ? recipeName : `Simple ${cuisineType} Bowl`);
 
-    // Create different snack options
-    const snackOptions = [
+    // Create different snack options, respecting dietary preferences
+    const snackOptions = isVegan ? [
+      {
+        name: 'Fresh Fruit & Nut Mix',
+        recipe_link: '#',
+        ingredients: ['Mixed nuts', 'Dried fruits', 'Fresh seasonal fruit'],
+        prep_time: '5 mins',
+        cook_time: '0 mins',
+      },
+      {
+        name: 'Veggie Sticks with Hummus',
+        recipe_link: '#',
+        ingredients: ['Carrot sticks', 'Cucumber', 'Bell pepper', 'Hummus'],
+        prep_time: '5 mins',
+        cook_time: '0 mins',
+      },
+      {
+        name: 'Plant-based Yogurt with Berries',
+        recipe_link: '#',
+        ingredients: ['Plant-based yogurt', 'Maple syrup', 'Fresh berries'],
+        prep_time: '2 mins',
+        cook_time: '0 mins',
+      }
+    ] : [
       {
         name: 'Fresh Fruit & Nut Mix',
         recipe_link: '#',
@@ -656,14 +785,14 @@ function convertRecipeToMealPlan(recipeMarkdown: string, numDays: number): MealP
       lunch: {
         name: lunchName,
         recipe_link: '#',
-        ingredients: ingredients,
+        ingredients: filteredIngredients, // Use filtered ingredients
         prep_time: dayIndex % 3 === 1 ? '5 mins' : '15 mins', // Quicker for leftovers
         cook_time: dayIndex % 3 === 1 ? '5 mins' : '25 mins',
       },
       dinner: {
         name: dinnerName,
         recipe_link: '#',
-        ingredients: ingredients,
+        ingredients: filteredIngredients, // Use filtered ingredients
         prep_time: '20 mins',
         cook_time: '30 mins',
       },

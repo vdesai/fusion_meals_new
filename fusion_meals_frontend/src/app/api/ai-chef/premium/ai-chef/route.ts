@@ -7,6 +7,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
+    // Log request information for debugging
+    console.log("AI Chef Premium API Request:", {
+      requestType: body.request_type,
+      timestamp: new Date().toISOString()
+    });
+    
     // If we're forcing mock data, skip trying to connect to the backend
     if (FORCE_MOCK_DATA) {
       console.log("Force mock data enabled, returning demo response");
@@ -17,7 +23,8 @@ export async function POST(request: NextRequest) {
     try {
       console.log("Attempting to connect to backend API for AI Chef:", body.request_type);
       
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://fusion-meals-new.onrender.com';
+      // Always use the production backend URL for Vercel deployments
+      const backendUrl = 'https://fusion-meals-new.onrender.com';
       console.log("Using backend URL:", backendUrl);
       
       // Connect to backend without requiring authentication
@@ -27,8 +34,8 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(body),
-        // Set a reasonable timeout
-        signal: AbortSignal.timeout(10000) // 10 seconds timeout
+        // Set a longer timeout for production
+        signal: AbortSignal.timeout(15000) // 15 seconds timeout
       });
       
       console.log("Backend response status:", response.status);

@@ -221,6 +221,8 @@ export default function AIChefPremium() {
     setError(null);
     setSubscriptionError(false);
     setCopiedTexts({});
+    
+    console.log("Starting AI Chef Premium request...");
 
     try {
       // Prepare request object based on request type
@@ -249,7 +251,11 @@ export default function AIChefPremium() {
           break;
       }
       
-      console.log('Sending request to AI Chef API:', requestObj);
+      // Log the full request for debugging
+      console.log('Sending request to AI Chef API:', JSON.stringify(requestObj, null, 2));
+      
+      // Track request start time for performance monitoring
+      const requestStartTime = Date.now();
       
       // Make API request
       const response = await fetch('/api/ai-chef/premium/ai-chef', {
@@ -260,23 +266,46 @@ export default function AIChefPremium() {
         body: JSON.stringify(requestObj),
       });
       
-      // Handle response
-      const data = await response.json();
+      // Calculate request duration
+      const requestDuration = Date.now() - requestStartTime;
+      console.log(`AI Chef API request completed in ${requestDuration}ms`);
       
+      // Get response details
+      const responseText = await response.text();
+      let data;
+      
+      try {
+        // Try to parse the response as JSON
+        data = JSON.parse(responseText);
+        console.log('AI Chef API response received:', data);
+      } catch (parseError) {
+        console.error('Failed to parse API response as JSON:', parseError);
+        console.error('Raw response text:', responseText);
+        throw new Error('Invalid response format from server');
+      }
+      
+      // Handle response error
       if (!response.ok) {
         console.error('API response error:', response.status, data);
         setError(data.detail || 'An error occurred while processing your request');
         return;
       }
       
-      console.log('AI Chef API response received:', data);
+      // Set the response data
       setResponse(data);
       setResultTabs(0); // Reset results tab
+      
+      // Check if this appears to be mock data by checking response time
+      if (requestDuration < 1000) {
+        console.warn('Response received very quickly - may be using mock data');
+      }
+      
     } catch (err) {
       console.error('Error in AI Chef API request:', err);
       setError('An error occurred while communicating with the server. Please try again.');
     } finally {
       setLoading(false);
+      console.log("AI Chef Premium request completed");
     }
   };
   

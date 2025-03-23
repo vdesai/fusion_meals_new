@@ -85,7 +85,7 @@ interface Transformation {
   }[];
   prep_time: string;
   cooking_time: string;
-  customization_tips: string[];
+  customization_tips?: string[];
 }
 
 interface TransformResult {
@@ -232,7 +232,18 @@ export default function MealPrepAssistant() {
       }
       
       const data = await response.json();
-      setTransformResult(data);
+      
+      // Ensure the data has the expected structure
+      const safeData = {
+        transformations: Array.isArray(data.transformations) ? data.transformations : [],
+        general_tips: Array.isArray(data.general_tips) ? data.general_tips : []
+      };
+      
+      // Log the data for debugging
+      console.log('Leftover transformation response:', data);
+      console.log('Processed transformation data:', safeData);
+      
+      setTransformResult(safeData);
     } catch (error) {
       console.error('Error transforming leftovers:', error);
       alert('Error transforming leftovers. Please try again later.');
@@ -806,7 +817,7 @@ export default function MealPrepAssistant() {
             </button>
           </div>
           
-          {transformResult && (
+          {transformResult && Array.isArray(transformResult.transformations) && transformResult.transformations.length > 0 ? (
             <div className="mt-6">
               <h3 className="text-2xl font-bold mb-4">Leftover Transformation Ideas</h3>
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
@@ -829,7 +840,7 @@ export default function MealPrepAssistant() {
                         <div>
                           <h5 className="font-medium mb-2">Leftover Ingredients Used</h5>
                           <ul className="list-disc pl-5 space-y-1">
-                            {transform.leftover_ingredients_used.map((ingredient, i) => (
+                            {transform.leftover_ingredients_used && transform.leftover_ingredients_used.map((ingredient, i) => (
                               <li key={i} className="text-gray-700 dark:text-gray-300">{ingredient}</li>
                             ))}
                           </ul>
@@ -838,7 +849,7 @@ export default function MealPrepAssistant() {
                         <div>
                           <h5 className="font-medium mb-2">Additional Ingredients Needed</h5>
                           <ul className="list-disc pl-5 space-y-1">
-                            {transform.additional_ingredients.map((ingredient, i) => (
+                            {transform.additional_ingredients && transform.additional_ingredients.map((ingredient, i) => (
                               <li key={i} className="text-gray-700 dark:text-gray-300">{ingredient}</li>
                             ))}
                           </ul>
@@ -848,7 +859,7 @@ export default function MealPrepAssistant() {
                       <div className="mb-4">
                         <h5 className="font-medium mb-2">Instructions</h5>
                         <ol className="border rounded-lg divide-y">
-                          {transform.instructions.map((step) => (
+                          {transform.instructions && transform.instructions.map((step) => (
                             <li key={step.step} className="p-3 flex items-start">
                               <span className="bg-indigo-100 text-indigo-800 rounded-full w-6 h-6 flex items-center justify-center mr-3 flex-shrink-0">
                                 {step.step}
@@ -861,31 +872,42 @@ export default function MealPrepAssistant() {
                         </ol>
                       </div>
                       
-                      <div>
-                        <h5 className="font-medium mb-2">Customization Tips</h5>
-                        <ul className="list-disc pl-5 space-y-1">
-                          {transform.customization_tips.map((tip, i) => (
-                            <li key={i} className="text-gray-700 dark:text-gray-300">{tip}</li>
-                          ))}
-                        </ul>
-                      </div>
+                      {transform.customization_tips && transform.customization_tips.length > 0 && (
+                        <div>
+                          <h5 className="font-medium mb-2">Customization Tips</h5>
+                          <ul className="list-disc pl-5 space-y-1">
+                            {transform.customization_tips.map((tip, i) => (
+                              <li key={i} className="text-gray-700 dark:text-gray-300">{tip}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
                 
-                <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <h4 className="text-lg font-semibold mb-2">General Tips</h4>
-                  <ul className="list-disc pl-5 space-y-1">
-                    {transformResult.general_tips.map((tip, i) => (
-                      <li key={i} className="text-gray-700 dark:text-gray-300">{tip}</li>
-                    ))}
-                  </ul>
-                </div>
+                {transformResult && transformResult.general_tips && transformResult.general_tips.length > 0 && (
+                  <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <h4 className="text-lg font-semibold mb-2">General Tips</h4>
+                    <ul className="list-disc pl-5 space-y-1">
+                      {transformResult.general_tips.map((tip, i) => (
+                        <li key={i} className="text-gray-700 dark:text-gray-300">{tip}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
-          )}
-          
-          {!transformResult && loading === false && (
+          ) : transformResult ? (
+            <div className="mt-6">
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-6">
+                <h3 className="text-lg font-medium text-indigo-700 dark:text-indigo-300 mb-2">No Transformation Ideas Found</h3>
+                <p className="text-indigo-600 dark:text-indigo-400">
+                  We couldn&apos;t find any transformation ideas for your leftovers. Try adding more ingredients or a different combination.
+                </p>
+              </div>
+            </div>
+          ) : loading === false && (
             <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-6 mt-4">
               <h3 className="text-lg font-medium text-indigo-700 dark:text-indigo-300 mb-2">Ready to Transform Your Leftovers</h3>
               <p className="text-indigo-600 dark:text-indigo-400">

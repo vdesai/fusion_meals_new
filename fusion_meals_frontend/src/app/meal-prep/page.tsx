@@ -4,11 +4,6 @@ import React, { useState } from 'react';
 import { Utensils, Clock, RefreshCw } from 'lucide-react';
 
 // Define types for API responses
-interface ShoppingListItem {
-  category: string;
-  items: string[];
-}
-
 interface CookingStep {
   step: number;
   description: string;
@@ -166,7 +161,7 @@ export default function MealPrepAssistant() {
       setBatchPlanResult(data);
     } catch (error) {
       console.error('Error generating batch cooking plan:', error);
-      alert('Our meal prep assistant is still cooking up some ideas. This feature will be fully implemented soon!');
+      alert('Error generating batch cooking plan. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -203,7 +198,7 @@ export default function MealPrepAssistant() {
       setRecipesResult(data);
     } catch (error) {
       console.error('Error getting time-optimized recipes:', error);
-      alert('Our time-optimized recipes are still being prepared. This feature will be fully implemented soon!');
+      alert('Error getting time-optimized recipes. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -240,7 +235,7 @@ export default function MealPrepAssistant() {
       setTransformResult(data);
     } catch (error) {
       console.error('Error transforming leftovers:', error);
-      alert('Our leftover transformation ideas are still being prepared. This feature will be fully implemented soon!');
+      alert('Error transforming leftovers. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -409,6 +404,94 @@ export default function MealPrepAssistant() {
                 </select>
               </div>
             </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Food Preferences
+              </label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {preferences.map((preference, index) => (
+                  <span 
+                    key={index} 
+                    className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm flex items-center"
+                  >
+                    {preference}
+                    <button 
+                      onClick={() => setPreferences(preferences.filter((_, i) => i !== index))}
+                      className="ml-2 text-indigo-600 hover:text-indigo-800"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <div className="flex">
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Add a preference (e.g., high-protein, quick meals)"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAddPreference((e.target as HTMLInputElement).value);
+                      (e.target as HTMLInputElement).value = '';
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    const input = document.querySelector('input[placeholder*="Add a preference"]') as HTMLInputElement;
+                    handleAddPreference(input.value);
+                    input.value = '';
+                  }}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-r-md"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Kitchen Equipment
+              </label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {equipment.map((item, index) => (
+                  <span 
+                    key={index} 
+                    className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm flex items-center"
+                  >
+                    {item}
+                    <button 
+                      onClick={() => setEquipment(equipment.filter((_, i) => i !== index))}
+                      className="ml-2 text-indigo-600 hover:text-indigo-800"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <div className="flex">
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Add equipment (e.g., slow cooker, air fryer)"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAddEquipment((e.target as HTMLInputElement).value);
+                      (e.target as HTMLInputElement).value = '';
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    const input = document.querySelector('input[placeholder*="Add equipment"]') as HTMLInputElement;
+                    handleAddEquipment(input.value);
+                    input.value = '';
+                  }}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-r-md"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
             <button
               onClick={generateBatchCookingPlan}
               disabled={loading}
@@ -537,9 +620,9 @@ export default function MealPrepAssistant() {
           
           {!batchPlanResult && loading === false && (
             <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-6 mt-4">
-              <h3 className="text-lg font-medium text-indigo-700 dark:text-indigo-300 mb-2">Coming Soon!</h3>
+              <h3 className="text-lg font-medium text-indigo-700 dark:text-indigo-300 mb-2">Ready to Create Your Meal Prep Plan</h3>
               <p className="text-indigo-600 dark:text-indigo-400">
-                The Smart Meal Prep Assistant is currently in development. Fill out the form above to see a preview of what's coming!
+                Fill out the form above and click &quot;Generate Batch Cooking Plan&quot; to get a personalized meal prep plan optimized for your schedule.
               </p>
             </div>
           )}
@@ -676,9 +759,9 @@ export default function MealPrepAssistant() {
           
           {!recipesResult && loading === false && (
             <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-6 mt-4">
-              <h3 className="text-lg font-medium text-indigo-700 dark:text-indigo-300 mb-2">Coming Soon!</h3>
+              <h3 className="text-lg font-medium text-indigo-700 dark:text-indigo-300 mb-2">Ready to Find Quick Recipes</h3>
               <p className="text-indigo-600 dark:text-indigo-400">
-                The Time-Optimized Recipes feature is currently in development. Fill out the form above to see a preview of what's coming!
+                Fill out the form above and click &quot;Find Quick Recipes&quot; to discover recipes that fit within your time constraints.
               </p>
             </div>
           )}
@@ -804,9 +887,9 @@ export default function MealPrepAssistant() {
           
           {!transformResult && loading === false && (
             <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-6 mt-4">
-              <h3 className="text-lg font-medium text-indigo-700 dark:text-indigo-300 mb-2">Coming Soon!</h3>
+              <h3 className="text-lg font-medium text-indigo-700 dark:text-indigo-300 mb-2">Ready to Transform Your Leftovers</h3>
               <p className="text-indigo-600 dark:text-indigo-400">
-                The Leftover Transformation tool is currently in development. Fill out the form above to see a preview of what's coming!
+                Enter your leftover ingredients above and click &quot;Transform Leftovers&quot; to get creative new recipe ideas.
               </p>
             </div>
           )}

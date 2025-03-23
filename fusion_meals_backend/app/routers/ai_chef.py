@@ -74,9 +74,10 @@ def get_user_subscription(session_id: Optional[str] = Cookie(None)):
     Get user subscription details from the session ID
     In a real app, this would query a database
     """
-    if not session_id:
-        return None
-        
+    # !!! DEMO CHANGE !!! - Always return a premium user for demonstration
+    # This bypasses authentication for demo purposes
+    # In a production environment, you would restore the normal authentication check
+    
     # For demo purposes, we're just returning the mock premium user
     user_id = "demo_user"
     

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, Container, Typography, TextField, Button, Card, CardContent, Tab, Tabs, Grid, Paper, Chip, CircularProgress, Alert, Divider, Stack } from '@mui/material';
+import { Box, Container, Typography, TextField, Button, Card, CardContent, Tab, Tabs, Grid, Paper, Chip, CircularProgress, Alert, Divider, Stack, IconButton, CardActions } from '@mui/material';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import KitchenIcon from '@mui/icons-material/Kitchen';
 import ShoppingBasketIcon from '@mui/icons-material/ShoppingBasket';
@@ -11,6 +11,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LockIcon from '@mui/icons-material/Lock';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 
 // Interface for the request types
 interface AIChefRequest {
@@ -1965,6 +1966,135 @@ export default function AIChefPremium() {
             />
           ))}
         </Stack>
+      </Box>
+    );
+  };
+  
+  // Add this new component for rendering sponsored content
+  const renderSponsoredContent = (sponsoredContent: any[]) => {
+    if (!sponsoredContent || sponsoredContent.length === 0) return null;
+    
+    // Track sponsor clicks for analytics
+    const trackSponsorClick = (sponsorName: string, url: string) => {
+      console.log(`Sponsor click tracked: ${sponsorName}`);
+      // In a production app, you'd send this to your analytics service
+      // Example: sendAnalyticsEvent('sponsor_click', { sponsor: sponsorName, url });
+      
+      // For now, just log it
+      const event = {
+        event_type: 'sponsor_click',
+        sponsor: sponsorName,
+        timestamp: new Date().toISOString(),
+        url: url
+      };
+      
+      // You could send this to your own endpoint for tracking
+      // fetch('/api/analytics/track', { method: 'POST', body: JSON.stringify(event) });
+    };
+    
+    return (
+      <Box sx={{ mt: 4, mb: 2 }}>
+        <Typography variant="h6" gutterBottom>
+          Partner Recommendations
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          These exclusive offers are selected to complement your request
+        </Typography>
+        
+        <Grid container spacing={2}>
+          {sponsoredContent.map((item, index) => (
+            <Grid item xs={12} sm={6} key={index}>
+              <Card 
+                sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  height: '100%',
+                  border: '1px solid',
+                  borderColor: 'primary.light',
+                  "&:hover": { boxShadow: 3 }
+                }}
+              >
+                <Box 
+                  sx={{ 
+                    height: 120, 
+                    overflow: 'hidden',
+                    position: 'relative',
+                    bgcolor: 'grey.100' 
+                  }}
+                >
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      position: 'absolute', 
+                      top: 5, 
+                      left: 5, 
+                      bgcolor: 'rgba(255,255,255,0.8)',
+                      px: 1,
+                      py: 0.5,
+                      borderRadius: 1,
+                      zIndex: 2
+                    }}
+                  >
+                    Sponsored
+                  </Typography>
+                  <Box 
+                    component="img"
+                    src={item.banner_image || '/images/sponsors/default-sponsored.jpg'}
+                    alt={`${item.partner} promotion`}
+                    sx={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      objectFit: 'cover'
+                    }}
+                    onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                      // Set default fallback image if the specified one fails to load
+                      e.currentTarget.src = '/images/sponsors/default-sponsored.jpg';
+                    }}
+                  />
+                </Box>
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    {item.partner}
+                  </Typography>
+                  <Typography variant="body2" paragraph>
+                    {item.message}
+                  </Typography>
+                  {item.promo_code && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <Typography variant="body2" fontWeight="bold">
+                        Code: {item.promo_code}
+                      </Typography>
+                      <IconButton 
+                        size="small" 
+                        onClick={() => copyToClipboard(item.promo_code, 'promo-code')}
+                        sx={{ ml: 1 }}
+                      >
+                        <ContentCopyIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  )}
+                </CardContent>
+                <CardActions>
+                  <Button 
+                    size="small" 
+                    component="a" 
+                    href={item.url} 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    variant="outlined"
+                    fullWidth
+                    startIcon={<ShoppingCartIcon />}
+                    onClick={() => trackSponsorClick(item.partner, item.url)}
+                    data-sponsor={item.partner}
+                    data-promo={item.promo_code}
+                  >
+                    View Offer
+                  </Button>
+                </CardActions>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
       </Box>
     );
   };

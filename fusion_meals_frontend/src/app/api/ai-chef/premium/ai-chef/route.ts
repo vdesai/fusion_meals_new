@@ -528,7 +528,30 @@ function generateDemoResponse(body: {
             iron: "85% DV"
           }
         },
-        estimated_total_cost: "$85-95 per week"
+        estimated_total_cost: "$85-95 per week",
+        sponsored_content: [
+          {
+            partner: "Amazon Fresh Grocery Delivery",
+            message: "Get all ingredients for this meal plan delivered to your door with $10 off your first order of $50 or more!",
+            url: "https://www.amazon.com/alm/storefront?almBrandId=QW1hem9uIEZyZXNo&tag=fusionmeals-20",
+            promo_code: "FUSION10",
+            banner_image: "/images/sponsors/amazon-fresh-banner.jpg"
+          },
+          {
+            partner: "HelloFresh",
+            message: "Too busy to meal plan? Try HelloFresh meal kits and get 16 free meals across 7 boxes plus free shipping!",
+            url: "https://www.hellofresh.com/pages/refer-a-friend?c=HS-C53S0JVNM&utm_campaign=clipboard&utm_couponvalue=HS-C53S0JVNM&utm_invitername=Fusion&utm_medium=referral&utm_source=raf-share",
+            promo_code: "HS-C53S0JVNM",
+            banner_image: "/images/sponsors/hellofresh-banner.jpg"
+          },
+          {
+            partner: "OXO Food Storage Containers",
+            message: "Prepare and store your meals with OXO's airtight food storage containers. 20% off your first purchase.",
+            url: "https://www.amazon.com/stores/OXO/page/9EB11535-598F-46ED-9AD4-C4AC578E67FC?tag=fusionmeals-20",
+            promo_code: "FUSIONOXO20",
+            banner_image: "/images/sponsors/oxo-banner.jpg"
+          }
+        ]
       },
       user_subscription: {
         level: "premium",
@@ -681,6 +704,29 @@ function generateDemoResponse(body: {
             modification: "Replace pancetta with sautéed pancetta and add seared scallops",
             additional_ingredients: ["Large sea scallops", "Lemon zest", "Chives"]
           }
+        ],
+        sponsored_content: [
+          {
+            partner: "Made In Cookware",
+            message: "Professional-grade carbon steel skillet recommended by our chefs - 15% off with promo code.",
+            url: "https://madeincookware.com/products/carbon-steel-frying-pan?variant=39410407800933&utm_source=affiliate&utm_medium=fusionmeals",
+            promo_code: "FUSIONCHEF15",
+            banner_image: "/images/sponsors/madein-banner.jpg"
+          },
+          {
+            partner: "Sur La Table",
+            message: "Shop for premium cookware and kitchen tools. Get $15 off your purchase of $75 or more.",
+            url: "https://www.surlatable.com/?clickid=fusion&utm_source=affiliate",
+            promo_code: "FUSION15",
+            banner_image: "/images/sponsors/surlatable-banner.jpg"
+          },
+          {
+            partner: "Maldon Sea Salt",
+            message: "Finish your dishes with the chef-recommended Maldon Sea Salt. Save 10% on your first order.",
+            url: "https://www.amazon.com/Maldon-Salt-Flaky-Sea-8-5/dp/B00017028M?tag=fusionmeals-20",
+            promo_code: "FUSIONSALT",
+            banner_image: "/images/sponsors/maldon-banner.jpg"
+          }
         ]
       },
       user_subscription: {
@@ -812,7 +858,23 @@ function generateDemoResponse(body: {
             "Mashed potatoes - the starch absorbs and distributes truffle flavor",
             "Mild soft cheeses - brie or similar create excellent carriers for truffle flavor"
           ]
-        }
+        },
+        sponsored_content: [
+          {
+            partner: "Williams Sonoma",
+            message: `Find high-quality ${ingredient} and gourmet ingredients at Williams Sonoma. Get free shipping on orders over $79.`,
+            url: "https://www.williams-sonoma.com/shop/food/?cm_type=gnav&cm_sp=GlobalNav-_-Food-_-All_Food&cm_re=GlobalNav-_-Food-_-All_Food&cm_ven=affiliatemarketing&source=fusionmeals",
+            promo_code: "FUSION79",
+            banner_image: "/images/sponsors/williams-sonoma-banner.jpg"
+          },
+          {
+            partner: "Thrive Market",
+            message: "Join Thrive Market for access to premium organic groceries at wholesale prices. Get 40% off your first order!",
+            url: "https://thrivemarket.com/invite/fusion-meals?utm_source=affiliate&utm_campaign=fusion",
+            promo_code: "FUSION40",
+            banner_image: "/images/sponsors/thrive-banner.jpg"
+          }
+        ]
       },
       user_subscription: {
         level: "premium",
@@ -878,7 +940,23 @@ function generateDemoResponse(body: {
           name: "Demo Data",
           description: "This is mock data shown because we couldn't connect to the backend API",
           chef_examples: ["Check your backend connection", "Verify the backend API is running"]
-        }
+        },
+        sponsored_content: [
+          {
+            partner: "World Market",
+            message: `Explore authentic ${cuisine} ingredients and cooking tools. Get $10 off your $50+ purchase.`,
+            url: "https://www.worldmarket.com/category/food-and-drink/food/international-favorites.do?utm_source=affiliate&utm_medium=fusionmeals",
+            promo_code: "FUSION10",
+            banner_image: "/images/sponsors/worldmarket-banner.jpg"
+          },
+          {
+            partner: "Blue Apron",
+            message: `Want to try cooking ${cuisine} dishes at home? Blue Apron delivers pre-measured ingredients and chef-designed recipes. Get $110 off across your first 5 boxes!`,
+            url: "https://cook.blueapron.com/refer-a-friend/?utm_source=fusionmeals&utm_campaign=referafriend",
+            promo_code: "FUSION110",
+            banner_image: "/images/sponsors/blueapron-banner.jpg"
+          }
+        ]
       },
       user_subscription: {
         level: "premium",
@@ -892,13 +970,68 @@ function generateDemoResponse(body: {
       ]
     });
   } else if (body.request_type === "student_meals") {
-    // Existing student_meals response
-    // ... existing code ...
+    // Add student meals response with budget-friendly sponsored content
+    return NextResponse.json({
+      premium_content: {
+        // ... existing student_meals content ...
+        sponsored_content: [
+          {
+            partner: "Imperfect Foods",
+            message: "Get affordable, sustainable groceries delivered to your door. Save up to 30% compared to grocery store prices. $20 off your first order!",
+            url: "https://www.imperfectfoods.com/join?utm_source=affiliate&utm_medium=fusionmeals",
+            promo_code: "FUSION20",
+            banner_image: "/images/sponsors/imperfect-foods-banner.jpg"
+          },
+          {
+            partner: "Ibotta",
+            message: "Get cash back on groceries and everyday purchases with Ibotta. New users get a $10 welcome bonus!",
+            url: "https://ibotta.com/r/fusionmeals",
+            promo_code: "FUSIONAPP",
+            banner_image: "/images/sponsors/ibotta-banner.jpg"
+          },
+          {
+            partner: "Target",
+            message: "Shop affordable kitchen essentials for your dorm or apartment. Get 5% off every day with Target RedCard.",
+            url: "https://www.target.com/c/college-kitchen-essentials/-/N-5xtv1?clkid=fusionmeals&lnm=fusionmeals",
+            promo_code: "FUSIONTGT",
+            banner_image: "/images/sponsors/target-banner.jpg"
+          }
+        ]
+      },
+      user_subscription: {
+        level: "premium",
+        expiry_date: "2023-12-31T00:00:00.000Z"
+      },
+      request_remaining: 25,
+      suggestions: [
+        "Try budget-friendly meal planning",
+        "Learn about batch cooking to save time and money",
+        "Discover affordable alternatives to expensive ingredients",
+        "Find student discounts at grocery stores near you"
+      ]
+    });
   } else {
     // Default response for unknown request types
     return NextResponse.json({
       premium_content: {
-        message: "Unknown request type. Please try again with a supported request type. This is demo data because the backend connection failed."
+        message: "Unknown request type. Please try again with a supported request type. This is demo data because the backend connection failed.",
+        // Add general sponsored content for unknown request types
+        sponsored_content: [
+          {
+            partner: "Instacart",
+            message: "Get groceries delivered in as little as 1 hour. $10 off your first order of $35 or more!",
+            url: "https://inst.cr/t/fusion-meals",
+            promo_code: "FUSION10",
+            banner_image: "/images/sponsors/instacart-banner.jpg"
+          },
+          {
+            partner: "KitchenAid",
+            message: "Professional kitchen tools for home chefs. Shop now and get free shipping on orders over $75.",
+            url: "https://www.kitchenaid.com/?utm_source=affiliate&utm_medium=fusionmeals",
+            promo_code: "FUSIONAID",
+            banner_image: "/images/sponsors/kitchenaid-banner.jpg"
+          }
+        ]
       },
       user_subscription: {
         level: "premium",

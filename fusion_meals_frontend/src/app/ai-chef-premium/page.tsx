@@ -1977,19 +1977,51 @@ export default function AIChefPremium() {
     // Track sponsor clicks for analytics
     const trackSponsorClick = (sponsorName: string, url: string) => {
       console.log(`Sponsor click tracked: ${sponsorName}`);
-      // In a production app, you'd send this to your analytics service
-      // Example: sendAnalyticsEvent('sponsor_click', { sponsor: sponsorName, url });
       
-      // For now, just log it
-      const event = {
+      // Gather useful analytics data
+      const analyticsData = {
         event_type: 'sponsor_click',
         sponsor: sponsorName,
         timestamp: new Date().toISOString(),
-        url: url
+        url: url,
+        request_type: requestType, // Track which feature led to this click
+        user_agent: navigator.userAgent,
+        referrer: document.referrer,
+        page_path: window.location.pathname
       };
       
-      // You could send this to your own endpoint for tracking
-      // fetch('/api/analytics/track', { method: 'POST', body: JSON.stringify(event) });
+      // Log for development
+      console.log('Affiliate click data:', analyticsData);
+      
+      // TODO: AFFILIATE TRACKING IMPLEMENTATION
+      // Uncomment and implement one of these tracking methods:
+      
+      // 1. Send to your own analytics endpoint
+      // fetch('/api/analytics/track', { 
+      //   method: 'POST', 
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(analyticsData) 
+      // });
+      
+      // 2. Track with Google Analytics
+      // if (window.gtag) {
+      //   window.gtag('event', 'affiliate_click', {
+      //     affiliate_partner: sponsorName,
+      //     affiliate_url: url,
+      //     content_type: requestType
+      //   });
+      // }
+      
+      // 3. Track with Facebook Pixel
+      // if (window.fbq) {
+      //   window.fbq('track', 'ClickAffiliate', {
+      //     partner: sponsorName,
+      //     content_type: requestType
+      //   });
+      // }
+      
+      // Always return true so the link click continues
+      return true;
     };
     
     return (

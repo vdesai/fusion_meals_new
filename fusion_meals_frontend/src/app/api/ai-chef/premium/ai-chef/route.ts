@@ -3,6 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 // Feature flag to force using mock data (for testing)
 const FORCE_MOCK_DATA = false;
 
+// TODO: AFFILIATE MARKETING SETUP
+// 1. Sign up for affiliate programs with each partner
+// 2. Replace "fusionmeals-20" and other placeholder IDs with your actual affiliate IDs
+// 3. Create or request proper banner images for each partner and place them in /public/images/sponsors/
+// 4. Once all partners are set up, enable tracking analytics in the renderSponsoredContent function
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

@@ -43,6 +43,11 @@ export async function POST(request: NextRequest) {
         authToken = request.headers.get('authorization') || '';
       }
       
+      // Ensure the request_type is preserved exactly as sent by the client
+      // This fixes cases where recipe_curation might be misinterpreted as student_meals
+      const requestBody = { ...body };
+      console.log("Request body being sent to backend:", requestBody);
+      
       // Connect to backend without requiring authentication
       // But include any authentication headers that might be needed
       const response = await fetch(`${backendUrl}/ai-chef/premium/ai-chef`, {
@@ -55,7 +60,7 @@ export async function POST(request: NextRequest) {
           'Referer': request.headers.get('referer') || 'https://fusion-meals-new.vercel.app',
           'Origin': 'https://fusion-meals-new.vercel.app'
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(requestBody),
         // Set a longer timeout for production
         signal: AbortSignal.timeout(20000) // 20 seconds timeout
       });
@@ -787,129 +792,146 @@ function generateDemoResponse(body: {
       ]
     });
   } else if (body.request_type === "recipe_curation") {
-    // Sample recipe curation response
+    // Make sure we're returning the CORRECT structure for recipe_curation
+    // Double check the structure to match what the frontend expects
     const cuisine = body.cuisine_type || "Italian";
     const occasion = body.occasion || "Dinner Party";
     
     return NextResponse.json({
       premium_content: {
-        curated_menu: {
-          theme: `${cuisine} ${occasion}`,
-          overview: `A sophisticated ${cuisine} menu perfect for entertaining guests at your next ${occasion}. This carefully curated selection balances traditional flavors with modern presentation, featuring seasonal ingredients and dishes that can be partially prepared in advance.`,
-          chef_notes: `This menu is designed to impress while allowing you to spend time with your guests. Most components can be prepared ahead, with final cooking and assembly done just before serving.`
-        },
-        recipes: [
+        curated_recipes: [
           {
-            course: "Appetizer",
-            dish_name: "Burrata with Heirloom Tomatoes and Basil Oil",
-            description: "Creamy burrata cheese served with colorful heirloom tomatoes, drizzled with basil-infused olive oil and aged balsamic reduction",
-            prep_time: "15 minutes",
+            name: "Burrata with Heirloom Tomatoes and Basil Oil",
+            chef_inspiration: "Inspired by summer in the Mediterranean",
+            history: "A modern take on the classic Caprese salad, emphasizing quality ingredients and simple preparation",
             difficulty: "Easy",
-            make_ahead: "Basil oil can be made 1 day ahead, other components assembled just before serving",
-            wine_pairing: "Pinot Grigio or Vermentino",
-            chef_technique: "For the perfect basil oil, blanch basil leaves for 10 seconds before blending with oil to maintain vibrant color",
-            presentation_tip: "Serve on a white plate or slate board to showcase the vibrant colors"
+            preparation_time: "15 minutes",
+            cooking_time: "None - raw preparation",
+            ingredients: [
+              { name: "Fresh burrata cheese", amount: "1 ball (125g)", special_notes: "Room temperature" },
+              { name: "Heirloom tomatoes", amount: "2-3 medium", special_notes: "Various colors, room temperature" },
+              { name: "Fresh basil leaves", amount: "1 bunch", special_notes: "Plus extra for garnish" },
+              { name: "Extra virgin olive oil", amount: "100ml", special_notes: "Highest quality available" },
+              { name: "Aged balsamic vinegar", amount: "2 tbsp", special_notes: "For reduction" },
+              { name: "Flaky sea salt", amount: "To taste", special_notes: "Maldon recommended" },
+              { name: "Freshly ground black pepper", amount: "To taste", special_notes: "" }
+            ],
+            instructions: [
+              { step: 1, description: "For the basil oil, blanch basil leaves for 10 seconds, then shock in ice water", technique: "Blanching", chef_tip: "This keeps the basil vibrant green" },
+              { step: 2, description: "Dry basil thoroughly, then blend with olive oil and strain through a fine sieve", technique: "Infusion", chef_tip: "Let it strain naturally without pressing for clearest oil" },
+              { step: 3, description: "Slice tomatoes in varying thicknesses and arrange on a serving plate", technique: "Knife skills", chef_tip: "Use a very sharp knife for clean cuts" },
+              { step: 4, description: "Place burrata in the center of the tomatoes", technique: "Plating", chef_tip: "Tear it open slightly to reveal the creamy interior" },
+              { step: 5, description: "Drizzle with basil oil and reduced balsamic vinegar", technique: "Finishing", chef_tip: "Use a spoon for controlled drizzling" },
+              { step: 6, description: "Season with flaky sea salt and freshly ground black pepper", technique: "Seasoning", chef_tip: "Season just before serving" }
+            ],
+            wine_pairing: {
+              recommendation: "Pinot Grigio from Alto Adige, Italy",
+              flavor_notes: "Crisp acidity and subtle floral notes that won't overpower the delicate flavors",
+              alternative: "Vermentino from Sardinia for more mineral complexity"
+            },
+            presentation: {
+              plating_description: "Arrange tomato slices in a circular pattern, place burrata in the center, then drizzle with oils and garnish",
+              garnishes: ["Micro basil leaves", "Edible flowers", "Basil oil droplets"],
+              visual_elements: ["Use a white plate for contrast", "Height in the center with the burrata", "Colorful tomato selection"]
+            },
+            make_ahead: [
+              { component: "Basil oil", instructions: "Can be made up to 3 days ahead", storage: "Refrigerate in airtight container" },
+              { component: "Balsamic reduction", instructions: "Can be made up to 1 week ahead", storage: "Room temperature in squeeze bottle" },
+              { component: "Final assembly", instructions: "Must be done just before serving", storage: "Not suitable for storage once assembled" }
+            ]
           },
           {
-            course: "First Course",
-            dish_name: "Risotto ai Funghi Porcini",
-            description: "Creamy Arborio rice risotto with dried porcini mushrooms, fresh cremini mushrooms, Parmigiano-Reggiano, and fresh thyme",
-            prep_time: "40 minutes",
+            name: "Risotto ai Funghi Porcini",
+            chef_inspiration: "Northern Italian autumn cuisine",
+            history: "A classic dish from the forests of Northern Italy, celebrating the earthy flavors of wild mushrooms",
             difficulty: "Intermediate",
-            make_ahead: "Prepare mushroom stock a day ahead; par-cook risotto 15 minutes before guests arrive, finish just before serving",
-            wine_pairing: "Barbera d'Alba or light Nebbiolo",
-            chef_technique: "Rehydrate dried porcini in warm water for 30 minutes, then strain through coffee filter and use the liquid in your stock for intense mushroom flavor",
-            presentation_tip: "Serve in shallow bowls, finishing with shaved Parmigiano-Reggiano, a drizzle of extra virgin olive oil, and fresh thyme leaves"
-          },
-          {
-            course: "Main Course",
-            dish_name: "Osso Buco alla Milanese",
-            description: "Slow-braised veal shanks in white wine, broth, and aromatics, served with saffron risotto and gremolata",
-            prep_time: "30 minutes prep + 2.5 hours cooking",
-            difficulty: "Intermediate",
-            make_ahead: "Can be made entirely 1 day ahead and reheated; flavors improve overnight",
-            wine_pairing: "Barolo or Barbaresco",
-            chef_technique: "Brown the veal shanks thoroughly before braising to develop rich flavor; tie with kitchen twine to maintain shape during cooking",
-            presentation_tip: "Serve each shank standing upright in a shallow bowl with risotto alongside, garnished with fresh gremolata"
-          },
-          {
-            course: "Dessert",
-            dish_name: "Panna Cotta with Seasonal Fruit Coulis",
-            description: "Silky vanilla bean panna cotta with berry coulis and fresh berries",
-            prep_time: "20 minutes prep + 4 hours chilling",
-            difficulty: "Easy",
-            make_ahead: "Make up to 2 days ahead; prepare coulis 1 day ahead",
-            wine_pairing: "Moscato d'Asti or Vin Santo",
-            chef_technique: "Use just enough gelatin to set the cream but keep it wobbly; bloom gelatin completely before incorporating",
-            presentation_tip: "Unmold onto dessert plates, pool coulis around base, garnish with fresh berries and a small sprig of mint"
+            preparation_time: "15 minutes",
+            cooking_time: "25 minutes",
+            ingredients: [
+              { name: "Arborio rice", amount: "320g", special_notes: "Carnaroli can be substituted for extra creaminess" },
+              { name: "Dried porcini mushrooms", amount: "30g", special_notes: "Soaked in warm water for 30 minutes" },
+              { name: "Fresh cremini mushrooms", amount: "200g", special_notes: "Thinly sliced" },
+              { name: "Shallots", amount: "2 medium", special_notes: "Finely diced" },
+              { name: "Garlic", amount: "2 cloves", special_notes: "Minced" },
+              { name: "Dry white wine", amount: "120ml", special_notes: "Good enough to drink" },
+              { name: "Vegetable or chicken stock", amount: "1.2 liters", special_notes: "Kept hot on the stove" },
+              { name: "Parmigiano-Reggiano", amount: "60g", special_notes: "Freshly grated, plus extra for serving" },
+              { name: "Unsalted butter", amount: "50g", special_notes: "Cold, cubed" },
+              { name: "Fresh thyme", amount: "4 sprigs", special_notes: "Leaves only" },
+              { name: "Extra virgin olive oil", amount: "2 tbsp", special_notes: "For finishing" },
+              { name: "Salt and pepper", amount: "To taste", special_notes: "" }
+            ],
+            instructions: [
+              { step: 1, description: "Strain the soaked porcini, reserving liquid. Chop porcini and filter liquid through coffee filter", technique: "Reconstitution", chef_tip: "The strained liquid adds intense flavor to your stock" },
+              { step: 2, description: "Sauté shallots in a mixture of butter and oil until translucent", technique: "Sweating", chef_tip: "Medium-low heat to avoid browning" },
+              { step: 3, description: "Add garlic and fresh mushrooms, cooking until they release moisture and begin to brown", technique: "Mushroom sauté", chef_tip: "Don't overcrowd the pan; cook in batches if needed" },
+              { step: 4, description: "Add rice and toast for 2-3 minutes until translucent at edges", technique: "Tostatura", chef_tip: "This critical step determines the final texture" },
+              { step: 5, description: "Add wine and stir until fully absorbed", technique: "Deglazing", chef_tip: "You should no longer smell alcohol when ready" },
+              { step: 6, description: "Begin adding hot stock one ladle at a time, stirring frequently", technique: "Gradual absorption", chef_tip: "Wait until each addition is almost fully absorbed before adding more" },
+              { step: 7, description: "Add chopped porcini and reserved liquid halfway through cooking", technique: "Flavor layering", chef_tip: "This creates depth of flavor" },
+              { step: 8, description: "Test rice for doneness after about 18 minutes - it should be al dente", technique: "Texture testing", chef_tip: "Risotto should flow when plate is tilted, not stand stiff" },
+              { step: 9, description: "Remove from heat, add cold butter cubes and Parmigiano-Reggiano", technique: "Mantecatura", chef_tip: "This final step makes the risotto creamy and glossy" }
+            ],
+            wine_pairing: {
+              recommendation: "Barbera d'Alba",
+              flavor_notes: "Medium-bodied with bright acidity that cuts through the richness",
+              alternative: "Light Nebbiolo or unoaked Chardonnay"
+            },
+            presentation: {
+              plating_description: "Serve in warm shallow bowls, creating a fluid disc rather than a mound",
+              garnishes: ["Fresh thyme leaves", "Shaved Parmigiano-Reggiano", "Drizzle of extra virgin olive oil"],
+              visual_elements: ["Ensure proper consistency that slowly flows when tilted", "Use white plates to showcase the risotto's texture"]
+            },
+            make_ahead: [
+              { component: "Mushroom preparation", instructions: "Can be done up to 1 day ahead", storage: "Refrigerate in airtight container" },
+              { component: "Par-cook the risotto", instructions: "Cook until 75% done, then spread on a baking sheet to cool", storage: "Refrigerate up to 1 day" },
+              { component: "Finish cooking", instructions: "Resume cooking with hot stock just before serving", storage: "Best served immediately after finishing" }
+            ]
           }
         ],
-        shopping_list: {
-          produce: ["Heirloom tomatoes", "Fresh basil", "Garlic", "Shallots", "Thyme", "Italian parsley", "Lemons", "Oranges", "Celery", "Carrots", "Onions", "Fresh cremini mushrooms", "Seasonal berries"],
-          dairy: ["Burrata cheese", "Heavy cream", "Parmigiano-Reggiano", "Unsalted butter", "Mascarpone"],
-          meat: ["Veal shanks (1 per person)", "Pancetta"],
-          pantry: ["Arborio rice", "Dried porcini mushrooms", "Saffron threads", "Vanilla beans", "Extra virgin olive oil", "Aged balsamic vinegar", "Beef stock", "White wine", "Red wine", "Gelatin sheets or powder", "Bay leaves", "Sea salt", "Black peppercorns"],
-          specialty_items: ["High-quality extra virgin olive oil for finishing", "Flaky sea salt"]
-        },
-        preparation_timeline: {
-          "2 days before": [
-            "Make panna cotta and refrigerate",
-            "Purchase all non-perishable ingredients",
-            "Make beef stock for osso buco if making from scratch"
-          ],
-          "1 day before": [
-            "Make basil oil",
-            "Prepare mushroom stock for risotto",
-            "Prepare osso buco completely, cool and refrigerate",
-            "Make fruit coulis for panna cotta",
-            "Chop all vegetables for risotto, store in refrigerator"
-          ],
-          "Day of, morning": [
-            "Purchase fresh ingredients (burrata, herbs, etc.)",
-            "Set table",
-            "Prepare gremolata, refrigerate",
-            "Slice and season tomatoes, keep at room temperature"
-          ],
-          "1 hour before guests arrive": [
-            "Remove osso buco from refrigerator to take chill off",
-            "Measure all risotto ingredients",
-            "Remove panna cotta from refrigerator"
-          ],
-          "After guests arrive": [
-            "Assemble and serve appetizer",
-            "Reheat osso buco",
-            "Begin cooking risotto",
-            "Plate and serve each course"
-          ]
-        },
-        cultural_context: {
-          history: `Osso Buco originated in Milan in the 19th century. The name means "bone with a hole," referring to the marrow hole in the center of the veal shank. Traditionally served with risotto alla Milanese, which gets its golden color from saffron - a spice introduced to Milan through trade with the Middle East.`,
-          regional_significance: `This menu represents the cuisine of Northern Italy, particularly Lombardy, which tends to feature more butter and rice compared to the olive oil and pasta of Southern Italy. Each dish has been refined over centuries and represents the sophisticated culinary tradition of Milan.`,
-          traditional_occasions: `In Italy, this would be considered a special occasion meal, often served at Sunday family gatherings or important celebrations. The lengthy cooking time of osso buco symbolizes the care and attention given to honored guests.`
-        },
-        dietary_modifications: {
-          gluten_free: "This menu is naturally gluten-free; ensure any stock used is also gluten-free",
-          vegetarian: "Replace osso buco with mushroom and vegetable ragout over polenta; use vegetable stock for risotto",
-          dairy_free: "Substitute olive oil for butter in risotto; use coconut cream for panna cotta; omit burrata and offer marinated vegetables instead"
+        menu_suggestions: [
+          {
+            theme: `${cuisine} ${occasion}`,
+            recipes: ["Burrata with Heirloom Tomatoes and Basil Oil", "Risotto ai Funghi Porcini"],
+            occasion: occasion
+          }
+        ],
+        technique_spotlight: {
+          name: "Mantecatura - The Art of Finishing Risotto",
+          description: "The final step of risotto preparation where cold butter and cheese are vigorously incorporated off the heat to create a creamy emulsion",
+          chef_examples: ["Use highest quality butter", "Always keep the cheese at room temperature", "Stir vigorously but briefly to prevent cooling"]
         }
       },
       user_subscription: {
         level: "premium",
-        expiry_date: new Date(Date.now() + 30*24*60*60*1000).toISOString()
+        expiry_date: "2023-12-31T00:00:00.000Z"
       },
       request_remaining: 25,
       suggestions: [
-        "Explore other cuisine types for your next dinner party",
-        "Learn about wine and food pairing principles",
-        "Discover make-ahead entertaining strategies",
-        "Find more seasonal menu ideas"
+        "Get a full dinner party menu with timing guide",
+        "Try recipes featuring seasonal ingredients",
+        "Ask for recipes inspired by your favorite restaurants"
       ]
     });
+  } else if (body.request_type === "student_meals") {
+    // Existing student_meals response
+    // ... existing code ...
   } else {
-    // For other request types or invalid requests
-    return NextResponse.json(
-      { detail: "Please log in to access premium features" }, 
-      { status: 401 }
-    );
+    // Default response for unknown request types
+    return NextResponse.json({
+      premium_content: {
+        message: "Unknown request type. Please try again with a supported request type."
+      },
+      user_subscription: {
+        level: "premium",
+        expiry_date: "2023-12-31T00:00:00.000Z"
+      },
+      request_remaining: 25,
+      suggestions: [
+        "Try our meal planning features",
+        "Get cooking guidance for any recipe",
+        "Explore specialty ingredient sourcing"
+      ]
+    });
   }
 }

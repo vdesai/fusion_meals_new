@@ -1247,6 +1247,46 @@ export default function AIChefPremium() {
               recipesArray = (recipeData as any).curated_recipes;
               console.log('Found recipes in curated_recipes');
             }
+            // Option 5: Check for student_meals structure and transform it (added for compatibility)
+            else if ((recipeData as any).student_meals && Array.isArray((recipeData as any).student_meals.recipes)) {
+              console.log('Found student_meals.recipes - converting to recipe format');
+              // Convert student meals recipes to the expected recipe format
+              recipesArray = (recipeData as any).student_meals.recipes.map((meal: any) => ({
+                name: meal.name,
+                chef_inspiration: "Student Meal Special",
+                history: "Designed for students and budget-conscious cooks",
+                difficulty: "Easy",
+                preparation_time: meal.prep_time,
+                cooking_time: "Quick",
+                ingredients: meal.ingredients.map((item: string) => ({
+                  name: item,
+                  amount: "As needed",
+                  special_notes: ""
+                })),
+                instructions: meal.instructions.map((step: string, index: number) => ({
+                  step: index + 1,
+                  description: step,
+                  technique: "",
+                  chef_tip: meal.storage || "Prepare in advance for busy days"
+                })),
+                wine_pairing: {
+                  recommendation: "Budget-friendly option",
+                  flavor_notes: "Light and refreshing",
+                  alternative: "Non-alcoholic beverage"
+                },
+                presentation: {
+                  plating_description: "Simple and appealing presentation",
+                  garnishes: ["Fresh herbs"],
+                  visual_elements: ["Colorful ingredients"]
+                },
+                make_ahead: [{
+                  component: "Full dish",
+                  instructions: meal.storage || "Store in refrigerator",
+                  storage: "Up to 3 days"
+                }]
+              }));
+              console.log('Converted student meals to recipe format', recipesArray);
+            }
             
             // Store the recipes array for rendering
             if (recipesArray && recipesArray.length > 0) {
@@ -1280,6 +1320,7 @@ export default function AIChefPremium() {
                     responseExists: !!response,
                     responseType: typeof response,
                     premiumContentExists: response && !!response.premium_content,
+                    responseKeys: response?.premium_content ? Object.keys(response.premium_content) : [],
                     fullResponse: response,
                   }, null, 2)}
                 </pre>

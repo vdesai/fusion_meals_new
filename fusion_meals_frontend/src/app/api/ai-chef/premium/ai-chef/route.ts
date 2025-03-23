@@ -27,18 +27,44 @@ export async function POST(request: NextRequest) {
       const backendUrl = 'https://fusion-meals-new.onrender.com';
       console.log("Using backend URL:", backendUrl);
       
+      // Get request headers for debugging
+      const requestHeaders = Object.fromEntries(request.headers);
+      console.log("Request headers:", JSON.stringify(requestHeaders, null, 2));
+      
+      // Extract cookies from request to pass along
+      const cookies = request.cookies.getAll();
+      console.log("Cookies from request:", cookies);
+      
+      // Extract potential authentication tokens from cookies or headers
+      let authToken = '';
+      if (cookies.some(cookie => cookie.name === 'auth_token')) {
+        authToken = cookies.find(cookie => cookie.name === 'auth_token')?.value || '';
+      } else if (request.headers.has('authorization')) {
+        authToken = request.headers.get('authorization') || '';
+      }
+      
       // Connect to backend without requiring authentication
+      // But include any authentication headers that might be needed
       const response = await fetch(`${backendUrl}/ai-chef/premium/ai-chef`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          // Include authorization header if we have a token
+          ...(authToken ? { 'Authorization': authToken } : {}),
+          // Add referrer and origin headers that might be required
+          'Referer': request.headers.get('referer') || 'https://fusion-meals-new.vercel.app',
+          'Origin': 'https://fusion-meals-new.vercel.app'
         },
         body: JSON.stringify(body),
         // Set a longer timeout for production
-        signal: AbortSignal.timeout(15000) // 15 seconds timeout
+        signal: AbortSignal.timeout(20000) // 20 seconds timeout
       });
       
       console.log("Backend response status:", response.status);
+      
+      // Log response headers for debugging
+      const responseHeaders = Object.fromEntries(response.headers);
+      console.log("Response headers:", JSON.stringify(responseHeaders, null, 2));
       
       // If the backend responds successfully, return the backend response
       if (response.ok) {
@@ -46,7 +72,16 @@ export async function POST(request: NextRequest) {
         console.log("Backend API response received successfully");
         return NextResponse.json(data);
       } else {
-        console.log("Backend returned error status:", response.status);
+        // For 403 errors, log more detailed information
+        if (response.status === 403) {
+          console.error("Backend returned 403 Forbidden - Authentication issue detected");
+          const errorText = await response.text();
+          console.error("Error response body:", errorText);
+          console.error("This likely means the backend API requires authentication");
+        } else {
+          console.log("Backend returned error status:", response.status);
+        }
+        
         // Fall back to demo response for any backend error
         return generateDemoResponse(body);
       }

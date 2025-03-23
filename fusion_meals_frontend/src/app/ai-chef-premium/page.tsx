@@ -245,6 +245,7 @@ export default function AIChefPremium() {
           break;
         case 'recipe_curation':
           requestObj = { ...requestObj, ...recipeCurationOptions };
+          console.log(`Recipe Curation - Selected cuisine: "${recipeCurationOptions.cuisine_type}"`);
           break;
         case 'student_meals':
           requestObj = { ...requestObj, ...studentMealsOptions };
@@ -258,6 +259,7 @@ export default function AIChefPremium() {
       const requestStartTime = Date.now();
       
       // Make API request
+      console.log(`Sending ${requestType} request with options:`, requestObj);
       const response = await fetch('/api/ai-chef/premium/ai-chef', {
         method: 'POST',
         headers: {
@@ -278,6 +280,15 @@ export default function AIChefPremium() {
         // Try to parse the response as JSON
         data = JSON.parse(responseText);
         console.log('AI Chef API response received:', data);
+        
+        // Check specifically for demo data indicators
+        if (
+          requestType === 'recipe_curation' && 
+          data.premium_content?.curated_recipes?.[0]?.name?.includes('DEMO DATA')
+        ) {
+          console.warn('DEMO DATA detected in response! Backend connection may have failed.');
+          setError('Warning: Using demo data because backend connection failed. Check the console for details.');
+        }
       } catch (parseError) {
         console.error('Failed to parse API response as JSON:', parseError);
         console.error('Raw response text:', responseText);

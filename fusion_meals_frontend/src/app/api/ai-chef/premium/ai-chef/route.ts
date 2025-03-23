@@ -10,6 +10,7 @@ export async function POST(request: NextRequest) {
     // Log request information for debugging
     console.log("AI Chef Premium API Request:", {
       requestType: body.request_type,
+      cuisineType: body.cuisine_type, // Explicitly log cuisine type
       timestamp: new Date().toISOString()
     });
     
@@ -23,8 +24,8 @@ export async function POST(request: NextRequest) {
     try {
       console.log("Attempting to connect to backend API for AI Chef:", body.request_type);
       
-      // Always use the production backend URL for Vercel deployments
-      const backendUrl = 'https://fusion-meals-new.onrender.com';
+      // Use the environment variable or fall back to the hardcoded URL
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://fusion-meals-new.onrender.com';
       console.log("Using backend URL:", backendUrl);
       
       // Get request headers for debugging
@@ -46,11 +47,11 @@ export async function POST(request: NextRequest) {
       // Ensure the request_type is preserved exactly as sent by the client
       // This fixes cases where recipe_curation might be misinterpreted as student_meals
       const requestBody = { ...body };
-      console.log("Request body being sent to backend:", requestBody);
+      console.log("Request body being sent to backend:", JSON.stringify(requestBody, null, 2));
       
       // Connect to backend without requiring authentication
       // But include any authentication headers that might be needed
-      const response = await fetch(`${backendUrl}/ai-chef/premium/ai-chef`, {
+      const response = await fetch(`${backendUrl}/api/ai-chef/premium/ai-chef`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify(requestBody),
         // Set a longer timeout for production
-        signal: AbortSignal.timeout(20000) // 20 seconds timeout
+        signal: AbortSignal.timeout(30000) // 30 seconds timeout (increased)
       });
       
       console.log("Backend response status:", response.status);
@@ -85,9 +86,42 @@ export async function POST(request: NextRequest) {
           console.error("This likely means the backend API requires authentication");
         } else {
           console.log("Backend returned error status:", response.status);
+          const errorText = await response.text();
+          console.error("Error response body:", errorText);
         }
         
-        // Fall back to demo response for any backend error
+        // Try once more with a different endpoint structure
+        try {
+          console.log("Attempting second connection attempt with alternative endpoint");
+          
+          // Try an alternative endpoint structure
+          const secondResponse = await fetch(`${backendUrl}/ai-chef/premium/ai-chef`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(authToken ? { 'Authorization': authToken } : {}),
+              'Referer': request.headers.get('referer') || 'https://fusion-meals-new.vercel.app',
+              'Origin': 'https://fusion-meals-new.vercel.app'
+            },
+            body: JSON.stringify(requestBody),
+            signal: AbortSignal.timeout(30000)
+          });
+          
+          console.log("Second attempt response status:", secondResponse.status);
+          
+          if (secondResponse.ok) {
+            const data = await secondResponse.json();
+            console.log("Second attempt successful!");
+            return NextResponse.json(data);
+          } else {
+            console.error("Second attempt also failed, falling back to demo response");
+          }
+        } catch (secondError) {
+          console.error("Error in second connection attempt:", secondError);
+        }
+        
+        // Fall back to demo response if both attempts fail
+        console.log("All backend connection attempts failed, falling back to demo response");
         return generateDemoResponse(body);
       }
     } catch (backendError) {
@@ -114,6 +148,7 @@ function generateDemoResponse(body: {
   occasion?: string;
 }) {
   console.log("Generating demo response for:", body.request_type);
+  console.log("IMPORTANT: This is MOCK DATA being used because the backend connection failed");
   
   // For demo purposes, return sample responses based on request type
   if (body.request_type === "meal_plan") {
@@ -797,109 +832,52 @@ function generateDemoResponse(body: {
     const cuisine = body.cuisine_type || "Italian";
     const occasion = body.occasion || "Dinner Party";
     
+    // Create a note in the response to indicate this is demo data
     return NextResponse.json({
       premium_content: {
         curated_recipes: [
           {
-            name: "Burrata with Heirloom Tomatoes and Basil Oil",
-            chef_inspiration: "Inspired by summer in the Mediterranean",
-            history: "A modern take on the classic Caprese salad, emphasizing quality ingredients and simple preparation",
+            name: `${cuisine} Inspired Dish (DEMO DATA)`,
+            chef_inspiration: `Inspired by ${cuisine} cuisine`,
+            history: `This is a mock response because the backend connection failed. You selected ${cuisine} cuisine, but we're showing demo data.`,
             difficulty: "Easy",
             preparation_time: "15 minutes",
             cooking_time: "None - raw preparation",
             ingredients: [
-              { name: "Fresh burrata cheese", amount: "1 ball (125g)", special_notes: "Room temperature" },
-              { name: "Heirloom tomatoes", amount: "2-3 medium", special_notes: "Various colors, room temperature" },
-              { name: "Fresh basil leaves", amount: "1 bunch", special_notes: "Plus extra for garnish" },
-              { name: "Extra virgin olive oil", amount: "100ml", special_notes: "Highest quality available" },
-              { name: "Aged balsamic vinegar", amount: "2 tbsp", special_notes: "For reduction" },
-              { name: "Flaky sea salt", amount: "To taste", special_notes: "Maldon recommended" },
-              { name: "Freshly ground black pepper", amount: "To taste", special_notes: "" }
+              { name: "Fresh ingredients", amount: "As needed", special_notes: "This is demo data" },
+              { name: "Backend connection", amount: "1", special_notes: "Failed to connect to real backend" },
+              { name: "Selected cuisine", amount: cuisine, special_notes: "Your selection" }
             ],
             instructions: [
-              { step: 1, description: "For the basil oil, blanch basil leaves for 10 seconds, then shock in ice water", technique: "Blanching", chef_tip: "This keeps the basil vibrant green" },
-              { step: 2, description: "Dry basil thoroughly, then blend with olive oil and strain through a fine sieve", technique: "Infusion", chef_tip: "Let it strain naturally without pressing for clearest oil" },
-              { step: 3, description: "Slice tomatoes in varying thicknesses and arrange on a serving plate", technique: "Knife skills", chef_tip: "Use a very sharp knife for clean cuts" },
-              { step: 4, description: "Place burrata in the center of the tomatoes", technique: "Plating", chef_tip: "Tear it open slightly to reveal the creamy interior" },
-              { step: 5, description: "Drizzle with basil oil and reduced balsamic vinegar", technique: "Finishing", chef_tip: "Use a spoon for controlled drizzling" },
-              { step: 6, description: "Season with flaky sea salt and freshly ground black pepper", technique: "Seasoning", chef_tip: "Season just before serving" }
+              { step: 1, description: "This is demo data because we couldn't connect to the backend", technique: "Demo", chef_tip: "Try again later when the backend might be available" },
+              { step: 2, description: `You selected '${cuisine}' cuisine, but we're showing generic demo data`, technique: "Mock Data", chef_tip: "Check your backend connection and logs" }
             ],
             wine_pairing: {
-              recommendation: "Pinot Grigio from Alto Adige, Italy",
-              flavor_notes: "Crisp acidity and subtle floral notes that won't overpower the delicate flavors",
-              alternative: "Vermentino from Sardinia for more mineral complexity"
+              recommendation: "Any wine you prefer",
+              flavor_notes: "This is demo data",
+              alternative: "Try connecting to the backend again"
             },
             presentation: {
-              plating_description: "Arrange tomato slices in a circular pattern, place burrata in the center, then drizzle with oils and garnish",
-              garnishes: ["Micro basil leaves", "Edible flowers", "Basil oil droplets"],
-              visual_elements: ["Use a white plate for contrast", "Height in the center with the burrata", "Colorful tomato selection"]
+              plating_description: "This is demonstration data only",
+              garnishes: ["Demo data"],
+              visual_elements: ["Mock response"]
             },
             make_ahead: [
-              { component: "Basil oil", instructions: "Can be made up to 3 days ahead", storage: "Refrigerate in airtight container" },
-              { component: "Balsamic reduction", instructions: "Can be made up to 1 week ahead", storage: "Room temperature in squeeze bottle" },
-              { component: "Final assembly", instructions: "Must be done just before serving", storage: "Not suitable for storage once assembled" }
-            ]
-          },
-          {
-            name: "Risotto ai Funghi Porcini",
-            chef_inspiration: "Northern Italian autumn cuisine",
-            history: "A classic dish from the forests of Northern Italy, celebrating the earthy flavors of wild mushrooms",
-            difficulty: "Intermediate",
-            preparation_time: "15 minutes",
-            cooking_time: "25 minutes",
-            ingredients: [
-              { name: "Arborio rice", amount: "320g", special_notes: "Carnaroli can be substituted for extra creaminess" },
-              { name: "Dried porcini mushrooms", amount: "30g", special_notes: "Soaked in warm water for 30 minutes" },
-              { name: "Fresh cremini mushrooms", amount: "200g", special_notes: "Thinly sliced" },
-              { name: "Shallots", amount: "2 medium", special_notes: "Finely diced" },
-              { name: "Garlic", amount: "2 cloves", special_notes: "Minced" },
-              { name: "Dry white wine", amount: "120ml", special_notes: "Good enough to drink" },
-              { name: "Vegetable or chicken stock", amount: "1.2 liters", special_notes: "Kept hot on the stove" },
-              { name: "Parmigiano-Reggiano", amount: "60g", special_notes: "Freshly grated, plus extra for serving" },
-              { name: "Unsalted butter", amount: "50g", special_notes: "Cold, cubed" },
-              { name: "Fresh thyme", amount: "4 sprigs", special_notes: "Leaves only" },
-              { name: "Extra virgin olive oil", amount: "2 tbsp", special_notes: "For finishing" },
-              { name: "Salt and pepper", amount: "To taste", special_notes: "" }
-            ],
-            instructions: [
-              { step: 1, description: "Strain the soaked porcini, reserving liquid. Chop porcini and filter liquid through coffee filter", technique: "Reconstitution", chef_tip: "The strained liquid adds intense flavor to your stock" },
-              { step: 2, description: "Sauté shallots in a mixture of butter and oil until translucent", technique: "Sweating", chef_tip: "Medium-low heat to avoid browning" },
-              { step: 3, description: "Add garlic and fresh mushrooms, cooking until they release moisture and begin to brown", technique: "Mushroom sauté", chef_tip: "Don't overcrowd the pan; cook in batches if needed" },
-              { step: 4, description: "Add rice and toast for 2-3 minutes until translucent at edges", technique: "Tostatura", chef_tip: "This critical step determines the final texture" },
-              { step: 5, description: "Add wine and stir until fully absorbed", technique: "Deglazing", chef_tip: "You should no longer smell alcohol when ready" },
-              { step: 6, description: "Begin adding hot stock one ladle at a time, stirring frequently", technique: "Gradual absorption", chef_tip: "Wait until each addition is almost fully absorbed before adding more" },
-              { step: 7, description: "Add chopped porcini and reserved liquid halfway through cooking", technique: "Flavor layering", chef_tip: "This creates depth of flavor" },
-              { step: 8, description: "Test rice for doneness after about 18 minutes - it should be al dente", technique: "Texture testing", chef_tip: "Risotto should flow when plate is tilted, not stand stiff" },
-              { step: 9, description: "Remove from heat, add cold butter cubes and Parmigiano-Reggiano", technique: "Mantecatura", chef_tip: "This final step makes the risotto creamy and glossy" }
-            ],
-            wine_pairing: {
-              recommendation: "Barbera d'Alba",
-              flavor_notes: "Medium-bodied with bright acidity that cuts through the richness",
-              alternative: "Light Nebbiolo or unoaked Chardonnay"
-            },
-            presentation: {
-              plating_description: "Serve in warm shallow bowls, creating a fluid disc rather than a mound",
-              garnishes: ["Fresh thyme leaves", "Shaved Parmigiano-Reggiano", "Drizzle of extra virgin olive oil"],
-              visual_elements: ["Ensure proper consistency that slowly flows when tilted", "Use white plates to showcase the risotto's texture"]
-            },
-            make_ahead: [
-              { component: "Mushroom preparation", instructions: "Can be done up to 1 day ahead", storage: "Refrigerate in airtight container" },
-              { component: "Par-cook the risotto", instructions: "Cook until 75% done, then spread on a baking sheet to cool", storage: "Refrigerate up to 1 day" },
-              { component: "Finish cooking", instructions: "Resume cooking with hot stock just before serving", storage: "Best served immediately after finishing" }
+              { component: "Demo data", instructions: "This is not real data from the backend", storage: "N/A" }
             ]
           }
         ],
         menu_suggestions: [
           {
-            theme: `${cuisine} ${occasion}`,
-            recipes: ["Burrata with Heirloom Tomatoes and Basil Oil", "Risotto ai Funghi Porcini"],
+            theme: `${cuisine} ${occasion} (DEMO DATA)`,
+            recipes: ["This is mock data"],
             occasion: occasion
           }
         ],
         technique_spotlight: {
-          name: "Mantecatura - The Art of Finishing Risotto",
-          description: "The final step of risotto preparation where cold butter and cheese are vigorously incorporated off the heat to create a creamy emulsion",
-          chef_examples: ["Use highest quality butter", "Always keep the cheese at room temperature", "Stir vigorously but briefly to prevent cooling"]
+          name: "Demo Data",
+          description: "This is mock data shown because we couldn't connect to the backend API",
+          chef_examples: ["Check your backend connection", "Verify the backend API is running"]
         }
       },
       user_subscription: {
@@ -908,9 +886,9 @@ function generateDemoResponse(body: {
       },
       request_remaining: 25,
       suggestions: [
-        "Get a full dinner party menu with timing guide",
-        "Try recipes featuring seasonal ingredients",
-        "Ask for recipes inspired by your favorite restaurants"
+        "Check that your backend is running",
+        "Look at the console logs for connection errors",
+        "Try again later when the backend might be available"
       ]
     });
   } else if (body.request_type === "student_meals") {
@@ -920,7 +898,7 @@ function generateDemoResponse(body: {
     // Default response for unknown request types
     return NextResponse.json({
       premium_content: {
-        message: "Unknown request type. Please try again with a supported request type."
+        message: "Unknown request type. Please try again with a supported request type. This is demo data because the backend connection failed."
       },
       user_subscription: {
         level: "premium",
@@ -928,9 +906,9 @@ function generateDemoResponse(body: {
       },
       request_remaining: 25,
       suggestions: [
-        "Try our meal planning features",
-        "Get cooking guidance for any recipe",
-        "Explore specialty ingredient sourcing"
+        "Check that your backend is running",
+        "Look at the console logs for connection errors", 
+        "Try again later when the backend might be available"
       ]
     });
   }

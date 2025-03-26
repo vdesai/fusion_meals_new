@@ -2142,11 +2142,13 @@ export default function AIChefPremium() {
         </Typography>
       </Box>
       
-      <Box sx={{ width: '100%', bgcolor: 'background.paper', mb: 4 }}>
+      <Box sx={{ width: '100%', bgcolor: 'background.paper', mb: 4, overflowX: 'auto' }}>
         <Tabs
           value={requestType}
           onChange={handleRequestTypeChange}
-          centered
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
           sx={{ borderBottom: 1, borderColor: 'divider' }}
         >
           <Tab icon={<RestaurantIcon />} label="Meal Plan" value="meal_plan" />

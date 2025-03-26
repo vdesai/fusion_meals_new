@@ -84,7 +84,8 @@ const Navbar = () => {
             </span>
           </Link>
         </div>
-        <div className="flex flex-1 items-center justify-end gap-x-1 relative" ref={desktopMenuRef}>
+        {/* Desktop menu dropdown - HIDDEN ON MOBILE */}
+        <div className="hidden lg:flex flex-1 items-center justify-end gap-x-1 relative" ref={desktopMenuRef}>
           <button 
             className="p-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
             onClick={() => setIsDesktopMenuOpen(!isDesktopMenuOpen)}

@@ -646,40 +646,77 @@ export default function AIChefPremium() {
               {resultTabs === 0 && content.meal_plan && (
                 <Box>
                   <Typography variant="h5" gutterBottom>Your Personalized Meal Plan</Typography>
-                  {content.meal_plan.days && content.meal_plan.days.map((day: MealPlanDay, index: number) => (
-                    <Card key={index} sx={{ mb: 2 }}>
-                      <CardContent>
-                        <Typography variant="h6" color="primary" gutterBottom>{day.day}</Typography>
-                        <Grid container spacing={2}>
-                          <Grid item xs={12} md={3}>
-                            <Typography variant="subtitle1" color="text.secondary">Breakfast</Typography>
-                            <Typography variant="body1">{day.breakfast.name}</Typography>
-                            <Typography variant="body2">{day.breakfast.description}</Typography>
-                          </Grid>
-                          <Grid item xs={12} md={3}>
-                            <Typography variant="subtitle1" color="text.secondary">Lunch</Typography>
-                            <Typography variant="body1">{day.lunch.name}</Typography>
-                            <Typography variant="body2">{day.lunch.description}</Typography>
-                          </Grid>
-                          <Grid item xs={12} md={4}>
-                            <Typography variant="subtitle1" color="text.secondary">Dinner</Typography>
-                            <Typography variant="body1">{day.dinner.name}</Typography>
-                            <Typography variant="body2">{day.dinner.description}</Typography>
-                            <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
-                              <LocalBarIcon fontSize="small" color="primary" />
-                              <Typography variant="body2" sx={{ ml: 1 }}>{day.dinner.wine_pairing}</Typography>
-                            </Box>
-                          </Grid>
-                          <Grid item xs={12} md={2}>
-                            <Typography variant="subtitle1" color="text.secondary">Snacks</Typography>
-                            {day.snacks && day.snacks.map((snack: any, snackIndex: number) => (
-                              <Typography key={snackIndex} variant="body2">{snack.name}</Typography>
-                            ))}
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {/* Check the timeframe and only display the first day if timeframe is "day" */}
+                  {content.meal_plan.days && (mealPlanOptions.timeframe === 'day' 
+                    ? content.meal_plan.days.slice(0, 1).map((day: MealPlanDay, index: number) => (
+                        <Card key={index} sx={{ mb: 2 }}>
+                          <CardContent>
+                            <Typography variant="h6" color="primary" gutterBottom>Today</Typography>
+                            <Grid container spacing={2}>
+                              <Grid item xs={12} md={3}>
+                                <Typography variant="subtitle1" color="text.secondary">Breakfast</Typography>
+                                <Typography variant="body1">{day.breakfast.name}</Typography>
+                                <Typography variant="body2">{day.breakfast.description}</Typography>
+                              </Grid>
+                              <Grid item xs={12} md={3}>
+                                <Typography variant="subtitle1" color="text.secondary">Lunch</Typography>
+                                <Typography variant="body1">{day.lunch.name}</Typography>
+                                <Typography variant="body2">{day.lunch.description}</Typography>
+                              </Grid>
+                              <Grid item xs={12} md={4}>
+                                <Typography variant="subtitle1" color="text.secondary">Dinner</Typography>
+                                <Typography variant="body1">{day.dinner.name}</Typography>
+                                <Typography variant="body2">{day.dinner.description}</Typography>
+                                <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                                  <LocalBarIcon fontSize="small" color="primary" />
+                                  <Typography variant="body2" sx={{ ml: 1 }}>{day.dinner.wine_pairing}</Typography>
+                                </Box>
+                              </Grid>
+                              <Grid item xs={12} md={2}>
+                                <Typography variant="subtitle1" color="text.secondary">Snacks</Typography>
+                                {day.snacks && day.snacks.map((snack: any, snackIndex: number) => (
+                                  <Typography key={snackIndex} variant="body2">{snack.name}</Typography>
+                                ))}
+                              </Grid>
+                            </Grid>
+                          </CardContent>
+                        </Card>
+                      ))
+                    : content.meal_plan.days.map((day: MealPlanDay, index: number) => (
+                        <Card key={index} sx={{ mb: 2 }}>
+                          <CardContent>
+                            <Typography variant="h6" color="primary" gutterBottom>{day.day}</Typography>
+                            <Grid container spacing={2}>
+                              <Grid item xs={12} md={3}>
+                                <Typography variant="subtitle1" color="text.secondary">Breakfast</Typography>
+                                <Typography variant="body1">{day.breakfast.name}</Typography>
+                                <Typography variant="body2">{day.breakfast.description}</Typography>
+                              </Grid>
+                              <Grid item xs={12} md={3}>
+                                <Typography variant="subtitle1" color="text.secondary">Lunch</Typography>
+                                <Typography variant="body1">{day.lunch.name}</Typography>
+                                <Typography variant="body2">{day.lunch.description}</Typography>
+                              </Grid>
+                              <Grid item xs={12} md={4}>
+                                <Typography variant="subtitle1" color="text.secondary">Dinner</Typography>
+                                <Typography variant="body1">{day.dinner.name}</Typography>
+                                <Typography variant="body2">{day.dinner.description}</Typography>
+                                <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                                  <LocalBarIcon fontSize="small" color="primary" />
+                                  <Typography variant="body2" sx={{ ml: 1 }}>{day.dinner.wine_pairing}</Typography>
+                                </Box>
+                              </Grid>
+                              <Grid item xs={12} md={2}>
+                                <Typography variant="subtitle1" color="text.secondary">Snacks</Typography>
+                                {day.snacks && day.snacks.map((snack: any, snackIndex: number) => (
+                                  <Typography key={snackIndex} variant="body2">{snack.name}</Typography>
+                                ))}
+                              </Grid>
+                            </Grid>
+                          </CardContent>
+                        </Card>
+                      ))
+                  )}
                   
                   <Box sx={{ mt: 3 }}>
                     <Typography variant="h6">Nutrition Summary</Typography>

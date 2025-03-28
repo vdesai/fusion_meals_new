@@ -109,7 +109,11 @@ async def ai_personal_chef(req: AIChefRequest, user_data: Optional[Dict] = Depen
     
     # Prepare prompt based on request type
     if req.request_type == "meal_plan":
-        prompt = generate_meal_plan_prompt(req, user_preferences)
+        # Optimize meal plan generation for different timeframes
+        if req.timeframe == "week":
+            prompt = generate_optimized_weekly_meal_plan_prompt(req, user_preferences)
+        else:
+            prompt = generate_meal_plan_prompt(req, user_preferences)
     elif req.request_type == "cooking_guidance":
         prompt = generate_cooking_guidance_prompt(req, user_preferences)
     elif req.request_type == "ingredient_sourcing":
@@ -122,10 +126,17 @@ async def ai_personal_chef(req: AIChefRequest, user_data: Optional[Dict] = Depen
         raise HTTPException(status_code=400, detail="Invalid request type")
     
     try:
-        # Call OpenAI API
+        # Set timeout parameters based on request complexity
+        timeout = 60  # Default 60 seconds
+        if req.request_type == "meal_plan" and req.timeframe == "week":
+            timeout = 120  # 2 minutes for weekly meal plans
+        
+        # Call OpenAI API with increased timeout
+        start_time = time.time()
         response = client.chat.completions.create(
             model="gpt-4-turbo",
             response_format={"type": "json_object"},
+            timeout=timeout,
             messages=[
                 {"role": "system", "content": "You are an AI Personal Chef assistant that creates premium culinary content for paying subscribers. Provide detailed, personalized responses in JSON format."},
                 {"role": "user", "content": prompt}
@@ -134,6 +145,7 @@ async def ai_personal_chef(req: AIChefRequest, user_data: Optional[Dict] = Depen
         
         # Parse response
         response_content = json.loads(response.choices[0].message.content)
+        print(f"OpenAI API request completed in {time.time() - start_time:.2f} seconds")
         
         # Post-process the response based on request type
         if req.request_type == "meal_plan":
@@ -146,41 +158,16 @@ async def ai_personal_chef(req: AIChefRequest, user_data: Optional[Dict] = Depen
                     if not value.endswith("% DV") and not key.endswith("_sources"):
                         micronutrients[key] = f"{value}% DV" if value else "0% DV"
                 
-                # Add any missing micronutrients with default values
-                required_micronutrients = [
-                    "vitamin_a", "vitamin_c", "calcium", "iron",
-                    "vitamin_b1", "vitamin_b2", "vitamin_b3", "vitamin_b5", "vitamin_b6", "vitamin_b12",
-                    "folate", "vitamin_d", "vitamin_e", "vitamin_k",
-                    "magnesium", "phosphorus", "potassium", "sodium",
-                    "zinc", "copper", "manganese", "selenium", "iodine"
-                ]
-                
-                for nutrient in required_micronutrients:
-                    if nutrient not in micronutrients:
-                        # Generate a random reasonable percentage between 70% and 130%
-                        percentage = random.randint(70, 130)
-                        micronutrients[nutrient] = f"{percentage}% DV"
-                
-                # Add sources if not present
+                # Add source fields if not present without adding mock random data
                 source_fields = [
                     "vitamin_a_sources", "b_vitamins_sources", "vitamin_c_sources", "vitamin_d_sources",
                     "calcium_sources", "iron_sources", "magnesium_sources", "zinc_sources"
                 ]
                 
-                source_defaults = {
-                    "vitamin_a_sources": "Carrots, sweet potatoes, spinach, kale",
-                    "b_vitamins_sources": "Whole grains, eggs, leafy greens, nuts",
-                    "vitamin_c_sources": "Citrus fruits, bell peppers, berries",
-                    "vitamin_d_sources": "Fatty fish, egg yolks, fortified foods",
-                    "calcium_sources": "Dairy products, leafy greens, fortified plant milks",
-                    "iron_sources": "Lean meats, beans, lentils, spinach",
-                    "magnesium_sources": "Nuts, seeds, whole grains, legumes",
-                    "zinc_sources": "Meat, shellfish, legumes, seeds"
-                }
-                
                 for source in source_fields:
                     if source not in micronutrients or not micronutrients[source]:
-                        micronutrients[source] = source_defaults.get(source, "Various foods in the meal plan")
+                        # Instead of adding mock data, just provide a generic source
+                        micronutrients[source] = "Foods from the meal plan"
         
         # Add metadata about the subscription
         result = {
@@ -606,4 +593,108 @@ def get_personalized_suggestions(request_type: str, user_preferences: Dict) -> L
             "Explore brain-boosting foods for better focus"
         ]
     
-    return suggestions 
+    return suggestions
+
+def generate_optimized_weekly_meal_plan_prompt(req: AIChefRequest, user_preferences: Dict) -> str:
+    """Generate a more efficient prompt for weekly meal planning to avoid timeouts"""
+    cuisine_prefs = ", ".join(user_preferences.get("cuisine_preferences", []))
+    dietary = ", ".join(user_preferences.get("dietary_restrictions", []))
+    household = user_preferences.get("household_size", 1)
+    favorites = ", ".join(user_preferences.get("favorite_ingredients", []))
+    dislikes = ", ".join(user_preferences.get("disliked_ingredients", []))
+    
+    budget = req.budget_level or "moderate"
+    
+    prompt = f"""
+    Create a simplified but premium personalized weekly meal plan with a {budget} budget.
+    
+    User preferences:
+    - Cuisine preferences: {cuisine_prefs}
+    - Dietary restrictions: {dietary}
+    - Household size: {household}
+    - Favorite ingredients: {favorites}
+    - Disliked ingredients: {dislikes}
+    
+    {f"Special occasion: {req.occasion}" if req.occasion else ""}
+    
+    Provide a simplified 7-day meal plan with:
+    1. Daily meals (breakfast, lunch, dinner, snacks - keep descriptions brief)
+    2. Basic grocery list
+    3. Brief prep instructions
+    4. Estimated costs 
+    5. Brief nutritional information with micronutrients
+    
+    Focus on efficiency and brevity while maintaining quality.
+    
+    Return as a JSON object with the following structure:
+    {{
+      "meal_plan": {{
+        "days": [
+          {{
+            "day": "Monday",
+            "breakfast": {{ "name": "", "description": "", "time_to_prepare": "", "calories": "" }},
+            "lunch": {{ "name": "", "description": "", "time_to_prepare": "", "calories": "" }},
+            "dinner": {{ "name": "", "description": "", "time_to_prepare": "", "calories": "", "wine_pairing": "" }},
+            "snacks": [{{ "name": "", "description": "", "calories": "" }}]
+          }}
+          // repeat for each day
+        ]
+      }},
+      "grocery_list": {{
+        "produce": [""],
+        "protein": [""],
+        "dairy": [""],
+        "grains": [""],
+        "other": [""]
+      }},
+      "meal_prep_guide": {{"day": "", "instructions": [""], "storage_tips": [""]}},
+      "estimated_total_cost": "",
+      "nutrition_summary": {{ 
+        "average_daily_calories": "", 
+        "protein_ratio": "", 
+        "carb_ratio": "", 
+        "fat_ratio": "",
+        "daily_macros": {{
+          "calories_breakdown": {{
+            "breakfast": "",
+            "lunch": "",
+            "dinner": "",
+            "snacks": ""
+          }},
+          "protein": {{
+            "grams": "",
+            "sources": [""]
+          }},
+          "carbohydrates": {{
+            "grams": "",
+            "sources": [""]
+          }},
+          "fats": {{
+            "grams": "",
+            "sources": [""]
+          }},
+          "fiber": {{
+            "grams": "",
+            "sources": [""]
+          }}
+        }},
+        "micronutrients": {{
+          "vitamin_a": "",
+          "vitamin_c": "",
+          "calcium": "",
+          "iron": "",
+          "vitamin_d": "",
+          "magnesium": "",
+          "zinc": "",
+          "vitamin_a_sources": "",
+          "vitamin_c_sources": "",
+          "vitamin_d_sources": "",
+          "calcium_sources": "",
+          "iron_sources": "",
+          "magnesium_sources": "",
+          "zinc_sources": ""
+        }}
+      }}
+    }}
+    """
+    return prompt 

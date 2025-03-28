@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 // Feature flag to force using mock data (for testing)
 const FORCE_MOCK_DATA = false;
 
+// Always use the production backend URL for consistent behavior in all environments
+const BACKEND_URL = 'https://fusion-meals-new.onrender.com';
+// Ensure our api endpoint is correctly set
+const API_ENDPOINT = '/ai-chef/premium/ai-chef';
+
 // TODO: AFFILIATE MARKETING SETUP
 // 1. Sign up for affiliate programs with each partner
 // 2. Replace "fusionmeals-20" and other placeholder IDs with your actual affiliate IDs
@@ -17,6 +22,8 @@ export async function POST(request: NextRequest) {
     console.log("AI Chef Premium API Request:", {
       requestType: body.request_type,
       cuisineType: body.cuisine_type, // Explicitly log cuisine type
+      timeframe: body.timeframe, // Log timeframe to debug day vs. week
+      occasion: body.occasion, // Log occasion for special events
       timestamp: new Date().toISOString()
     });
     
@@ -30,9 +37,12 @@ export async function POST(request: NextRequest) {
     try {
       console.log("Attempting to connect to backend API for AI Chef:", body.request_type);
       
-      // Use the environment variable or fall back to the hardcoded URL
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://fusion-meals-new.onrender.com';
-      console.log("Using backend URL:", backendUrl);
+      // Always use the hardcoded backend URL - don't rely on environment variables in production
+      console.log("Using backend URL:", BACKEND_URL);
+      
+      // Construct the full URL with the correct API endpoint
+      const fullUrl = `${BACKEND_URL}${API_ENDPOINT}`;
+      console.log("Full API URL being called:", fullUrl);
       
       // Get request headers for debugging
       const requestHeaders = Object.fromEntries(request.headers);
@@ -68,7 +78,10 @@ export async function POST(request: NextRequest) {
           
           // Connect to backend without requiring authentication
           // But include any authentication headers that might be needed
-          response = await fetch(`${backendUrl}/ai-chef/premium/ai-chef`, {
+          console.log("Sending fetch request to:", fullUrl);
+          console.log("With request body:", JSON.stringify(requestBody));
+          
+          response = await fetch(fullUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -107,7 +120,7 @@ export async function POST(request: NextRequest) {
           }
         }
       }
-      
+
       // If we don't have a response after all retries, throw an error
       if (!response) {
         throw new Error("Failed to get response from backend after multiple attempts");
@@ -137,79 +150,8 @@ export async function POST(request: NextRequest) {
           console.error("Error response body:", errorText);
         }
         
-        // Try once more with a different endpoint structure
-        try {
-          console.log("Attempting second connection attempt with alternative endpoint");
-          
-          // Apply the same retry mechanism for the second attempt
-          let secondResponse: Response | undefined;
-          let secondRetryCount = 0;
-          const secondMaxRetries = 2; // Maximum number of retries
-          
-          while (secondRetryCount <= secondMaxRetries) {
-            try {
-              if (secondRetryCount > 0) {
-                console.log(`Retry attempt ${secondRetryCount}/${secondMaxRetries} for second connection...`);
-              }
-              
-              // Try an alternative endpoint structure
-              secondResponse = await fetch(`${backendUrl}/ai-chef/premium/ai-chef`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  ...(authToken ? { 'Authorization': authToken } : {}),
-                  'Referer': request.headers.get('referer') || 'https://fusion-meals-new.vercel.app',
-                  'Origin': 'https://fusion-meals-new.vercel.app'
-                },
-                body: JSON.stringify(requestBody),
-                signal: AbortSignal.timeout(60000) // 60 seconds timeout (increased from 30 seconds)
-              });
-              
-              // If we get a response, break out of retry loop
-              break;
-            } catch (error: unknown) {
-              // Only retry on timeout errors
-              const retryError = error as { code?: number };
-              if (retryError.code === 23) { // TIMEOUT_ERR
-                secondRetryCount++;
-                
-                if (secondRetryCount > secondMaxRetries) {
-                  console.log("Maximum retries reached for second attempt, giving up");
-                  throw error;
-                }
-                
-                // Exponential backoff (1s, 2s, 4s, etc.)
-                const backoffTime = Math.pow(2, secondRetryCount - 1) * 1000;
-                console.log(`Timeout error, waiting ${backoffTime}ms before retry ${secondRetryCount}/${secondMaxRetries}`);
-                await new Promise(resolve => setTimeout(resolve, backoffTime));
-              } else {
-                // For non-timeout errors, stop retrying
-                console.error("Non-timeout error during second fetch:", error);
-                throw error;
-              }
-            }
-          }
-          
-          // If we don't have a response after all retries, throw an error
-          if (!secondResponse) {
-            throw new Error("Failed to get response from second attempt after multiple retries");
-          }
-          
-          console.log("Second attempt response status:", secondResponse.status);
-          
-          if (secondResponse.ok) {
-            const data = await secondResponse.json();
-            console.log("Second attempt successful!");
-            return NextResponse.json(data);
-          } else {
-            console.error("Second attempt also failed, falling back to demo response");
-          }
-        } catch (secondError) {
-          console.error("Error in second connection attempt:", secondError);
-        }
-        
         // Fall back to demo response if both attempts fail
-        console.log("All backend connection attempts failed, falling back to demo response");
+        console.log("Backend connection failed with error, falling back to demo response");
         return generateDemoResponse(body);
       }
     } catch (backendError) {

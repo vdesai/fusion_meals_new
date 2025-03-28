@@ -302,6 +302,22 @@ export default function AIChefPremium() {
       const requestDuration = Date.now() - requestStartTime;
       console.log(`AI Chef API request completed in ${requestDuration}ms`);
       
+      // Check for network errors
+      if (!response.ok) {
+        console.error(`API response error: ${response.status} ${response.statusText}`);
+        const errorData = await response.text();
+        console.error('Error response:', errorData);
+        try {
+          // Try to parse as JSON
+          const errorJson = JSON.parse(errorData);
+          setError(errorJson.detail || `Error ${response.status}: ${response.statusText}`);
+        } catch (e) {
+          // If not JSON, use the raw text
+          setError(`Error ${response.status}: ${response.statusText || errorData}`);
+        }
+        return;
+      }
+      
       // Get response details
       const responseText = await response.text();
       let data;
@@ -320,37 +336,34 @@ export default function AIChefPremium() {
         
         // Check specifically for demo data indicators
         if (
+          requestType === 'meal_plan' && 
+          !data.premium_content?.nutrition_summary?.micronutrients?.vitamin_a
+        ) {
+          console.warn('Missing micronutrient data detected! May be using demo data.');
+          setError('Warning: The response may be demo data. Check the console for details.');
+        }
+
+        if (
           requestType === 'recipe_curation' && 
           data.premium_content?.curated_recipes?.[0]?.name?.includes('DEMO DATA')
         ) {
           console.warn('DEMO DATA detected in response! Backend connection may have failed.');
           setError('Warning: Using demo data because backend connection failed. Check the console for details.');
         }
+
+        // Set the response data
+        setResponse(data);
+        setResultTabs(0); // Reset results tab
       } catch (parseError) {
         console.error('Failed to parse API response as JSON:', parseError);
         console.error('Raw response text:', responseText);
-        throw new Error('Invalid response format from server');
-      }
-      
-      // Handle response error
-      if (!response.ok) {
-        console.error('API response error:', response.status, data);
-        setError(data.detail || 'An error occurred while processing your request');
+        setError('Invalid response format from server. Check the console for details.');
         return;
-      }
-      
-      // Set the response data
-      setResponse(data);
-      setResultTabs(0); // Reset results tab
-      
-      // Check if this appears to be mock data by checking response time
-      if (requestDuration < 1000) {
-        console.warn('Response received very quickly - may be using mock data');
       }
       
     } catch (err) {
       console.error('Error in AI Chef API request:', err);
-      setError('An error occurred while communicating with the server. Please try again.');
+      setError(`Network error: ${err instanceof Error ? err.message : 'Unknown error'}. Please try again.`);
     } finally {
       setLoading(false);
       console.log("AI Chef Premium request completed");

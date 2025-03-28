@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Container, Typography, TextField, Button, Card, CardContent, Tab, Tabs, Grid, Paper, Chip, CircularProgress, Alert, Divider, Stack, IconButton, CardActions } from '@mui/material';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import KitchenIcon from '@mui/icons-material/Kitchen';
@@ -12,6 +12,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LockIcon from '@mui/icons-material/Lock';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import ScienceIcon from '@mui/icons-material/Science';
 
 // Interface for the request types
 interface AIChefRequest {
@@ -165,6 +166,18 @@ interface MealPlanContent {
   estimated_total_cost: string;
 }
 
+// Add an interface for micronutrient requests
+interface MicronutrientRequest {
+  day: string;
+  breakfast: string;
+  lunch: string;
+  dinner: string;
+  snacks: string[];
+  isLoading: boolean;
+  error: string | null;
+  data: Record<string, string> | null;
+}
+
 export default function AIChefPremium() {
   // State for handling the form and responses
   const [requestType, setRequestType] = useState<'meal_plan' | 'cooking_guidance' | 'ingredient_sourcing' | 'recipe_curation' | 'student_meals'>('meal_plan');
@@ -176,7 +189,7 @@ export default function AIChefPremium() {
   
   // State for request options
   const [mealPlanOptions, setMealPlanOptions] = useState<MealPlanOptions>({
-    timeframe: 'week',
+    timeframe: 'day', // Changed back to default 'day'
     occasion: '',
     budget_level: 'moderate',
   });
@@ -208,6 +221,9 @@ export default function AIChefPremium() {
   
   // Response state
   const [response, setResponse] = useState<AIChefResponse | null>(null);
+  
+  // State for micronutrient requests
+  const [micronutrientRequests, setMicronutrientRequests] = useState<{[key: string]: MicronutrientRequest}>({});
   
   // Handle form input changes based on request type
   const handleMealPlanOptionsChange = (prop: keyof MealPlanOptions) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -400,6 +416,7 @@ export default function AIChefPremium() {
                   SelectProps={{
                     native: true,
                   }}
+                  helperText="Micronutrient data available on demand for any day"
                 >
                   <option value="day">One Day</option>
                   <option value="weekend">Weekend</option>
@@ -644,7 +661,7 @@ export default function AIChefPremium() {
     if (!response) return null;
     
     // Use a safer type approach
-    const content = response.premium_content as unknown as any;
+    const content = response.premium_content as unknown as Record<string, any>;
     
     // Log response data for debugging
     console.log("Request type:", requestType);
@@ -694,11 +711,51 @@ export default function AIChefPremium() {
                               </Grid>
                               <Grid item xs={12} md={2}>
                                 <Typography variant="subtitle1" color="text.secondary">Snacks</Typography>
-                                {day.snacks && day.snacks.map((snack: any, snackIndex: number) => (
+                                {day.snacks && day.snacks.map((snack: { name: string; description: string; calories: string }, snackIndex: number) => (
                                   <Typography key={snackIndex} variant="body2">{snack.name}</Typography>
                                 ))}
                               </Grid>
                             </Grid>
+                            
+                            {/* Add micronutrient analysis button */}
+                            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                              <Button
+                                variant="outlined"
+                                color="secondary"
+                                startIcon={<ScienceIcon />}
+                                onClick={() => handleMicronutrientRequest(day, index)}
+                                disabled={micronutrientRequests[`day_${index}`]?.isLoading}
+                              >
+                                {micronutrientRequests[`day_${index}`]?.isLoading ? 'Analyzing...' : 
+                                 micronutrientRequests[`day_${index}`]?.data ? 'View Micronutrients' : 'Analyze Micronutrients'}
+                              </Button>
+                            </Box>
+                            
+                            {/* Display micronutrient results */}
+                            {micronutrientRequests[`day_${index}`]?.data && (
+                              <Box sx={{ mt: 2, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
+                                <Typography variant="subtitle1" gutterBottom>Micronutrient Analysis</Typography>
+                                <Grid container spacing={2}>
+                                  {Object.entries(micronutrientRequests[`day_${index}`].data || {})
+                                    .filter(([key]) => !key.includes('_sources'))
+                                    .map(([key, value]) => (
+                                      <Grid item xs={6} sm={4} md={3} key={key}>
+                                        <Paper sx={{ p: 1, textAlign: 'center' }}>
+                                          <Typography variant="caption">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</Typography>
+                                          <Typography variant="subtitle2">{String(value)}</Typography>
+                                        </Paper>
+                                      </Grid>
+                                    ))}
+                                </Grid>
+                              </Box>
+                            )}
+                            
+                            {/* Display error if any */}
+                            {micronutrientRequests[`day_${index}`]?.error && (
+                              <Alert severity="error" sx={{ mt: 2 }}>
+                                Error analyzing micronutrients: {micronutrientRequests[`day_${index}`].error}
+                              </Alert>
+                            )}
                           </CardContent>
                         </Card>
                       ))
@@ -728,11 +785,51 @@ export default function AIChefPremium() {
                               </Grid>
                               <Grid item xs={12} md={2}>
                                 <Typography variant="subtitle1" color="text.secondary">Snacks</Typography>
-                                {day.snacks && day.snacks.map((snack: any, snackIndex: number) => (
+                                {day.snacks && day.snacks.map((snack: { name: string; description: string; calories: string }, snackIndex: number) => (
                                   <Typography key={snackIndex} variant="body2">{snack.name}</Typography>
                                 ))}
                               </Grid>
                             </Grid>
+                            
+                            {/* Add micronutrient analysis button */}
+                            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                              <Button
+                                variant="outlined"
+                                color="secondary"
+                                startIcon={<ScienceIcon />}
+                                onClick={() => handleMicronutrientRequest(day, index)}
+                                disabled={micronutrientRequests[`day_${index}`]?.isLoading}
+                              >
+                                {micronutrientRequests[`day_${index}`]?.isLoading ? 'Analyzing...' : 
+                                 micronutrientRequests[`day_${index}`]?.data ? 'View Micronutrients' : 'Analyze Micronutrients'}
+                              </Button>
+                            </Box>
+                            
+                            {/* Display micronutrient results */}
+                            {micronutrientRequests[`day_${index}`]?.data && (
+                              <Box sx={{ mt: 2, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
+                                <Typography variant="subtitle1" gutterBottom>Micronutrient Analysis</Typography>
+                                <Grid container spacing={2}>
+                                  {Object.entries(micronutrientRequests[`day_${index}`].data || {})
+                                    .filter(([key]) => !key.includes('_sources'))
+                                    .map(([key, value]) => (
+                                      <Grid item xs={6} sm={4} md={3} key={key}>
+                                        <Paper sx={{ p: 1, textAlign: 'center' }}>
+                                          <Typography variant="caption">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</Typography>
+                                          <Typography variant="subtitle2">{String(value)}</Typography>
+                                        </Paper>
+                                      </Grid>
+                                    ))}
+                                </Grid>
+                              </Box>
+                            )}
+                            
+                            {/* Display error if any */}
+                            {micronutrientRequests[`day_${index}`]?.error && (
+                              <Alert severity="error" sx={{ mt: 2 }}>
+                                Error analyzing micronutrients: {micronutrientRequests[`day_${index}`].error}
+                              </Alert>
+                            )}
                           </CardContent>
                         </Card>
                       ))
@@ -2393,6 +2490,82 @@ export default function AIChefPremium() {
         </Grid>
       </Box>
     );
+  };
+  
+  // Handle micronutrient request for a specific day
+  const handleMicronutrientRequest = async (day: MealPlanDay, dayIndex: number) => {
+    const dayId = `day_${dayIndex}`;
+    
+    // If already loaded or loading, don't make another request
+    if (micronutrientRequests[dayId]?.isLoading || micronutrientRequests[dayId]?.data) {
+      return;
+    }
+    
+    // Create initial request state
+    setMicronutrientRequests(prev => ({
+      ...prev,
+      [dayId]: {
+        day: day.day,
+        breakfast: day.breakfast.name,
+        lunch: day.lunch.name,
+        dinner: day.dinner.name,
+        snacks: day.snacks ? day.snacks.map(snack => snack.name) : [],
+        isLoading: true,
+        error: null,
+        data: null
+      }
+    }));
+    
+    try {
+      // Prepare request for micronutrient analysis
+      const requestData = {
+        request_type: "micronutrient_analysis",
+        meals: {
+          breakfast: `${day.breakfast.name}: ${day.breakfast.description}`,
+          lunch: `${day.lunch.name}: ${day.lunch.description}`,
+          dinner: `${day.dinner.name}: ${day.dinner.description}`,
+          snacks: day.snacks ? day.snacks.map(snack => `${snack.name}: ${snack.description || ''}`) : []
+        }
+      };
+      
+      console.log("Sending micronutrient request:", requestData);
+      
+      // Make API request
+      const response = await fetch('/api/ai-chef/premium/ai-chef', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log("Micronutrient data received:", data);
+      
+      // Update state with results
+      setMicronutrientRequests(prev => ({
+        ...prev,
+        [dayId]: {
+          ...prev[dayId],
+          isLoading: false,
+          data: data.premium_content?.micronutrient_analysis || data.premium_content?.nutrition_summary?.micronutrients || null
+        }
+      }));
+    } catch (error) {
+      console.error("Error fetching micronutrient data:", error);
+      setMicronutrientRequests(prev => ({
+        ...prev,
+        [dayId]: {
+          ...prev[dayId],
+          isLoading: false,
+          error: error instanceof Error ? error.message : "Unknown error"
+        }
+      }));
+    }
   };
   
   return (

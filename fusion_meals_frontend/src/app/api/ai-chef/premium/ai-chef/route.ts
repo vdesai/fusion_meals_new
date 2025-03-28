@@ -55,22 +55,63 @@ export async function POST(request: NextRequest) {
       const requestBody = { ...body };
       console.log("Request body being sent to backend:", JSON.stringify(requestBody, null, 2));
       
-      // Connect to backend without requiring authentication
-      // But include any authentication headers that might be needed
-      const response = await fetch(`${backendUrl}/ai-chef/premium/ai-chef`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Include authorization header if we have a token
-          ...(authToken ? { 'Authorization': authToken } : {}),
-          // Add referrer and origin headers that might be required
-          'Referer': request.headers.get('referer') || 'https://fusion-meals-new.vercel.app',
-          'Origin': 'https://fusion-meals-new.vercel.app'
-        },
-        body: JSON.stringify(requestBody),
-        // Set a longer timeout for production
-        signal: AbortSignal.timeout(30000) // 30 seconds timeout (increased)
-      });
+      // Implement retry logic with exponential backoff
+      let response: Response | undefined;
+      let retryCount = 0;
+      const maxRetries = 2; // Maximum number of retries (will attempt up to 3 times total)
+      
+      while (retryCount <= maxRetries) {
+        try {
+          if (retryCount > 0) {
+            console.log(`Retry attempt ${retryCount}/${maxRetries} for backend connection...`);
+          }
+          
+          // Connect to backend without requiring authentication
+          // But include any authentication headers that might be needed
+          response = await fetch(`${backendUrl}/ai-chef/premium/ai-chef`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              // Include authorization header if we have a token
+              ...(authToken ? { 'Authorization': authToken } : {}),
+              // Add referrer and origin headers that might be required
+              'Referer': request.headers.get('referer') || 'https://fusion-meals-new.vercel.app',
+              'Origin': 'https://fusion-meals-new.vercel.app'
+            },
+            body: JSON.stringify(requestBody),
+            // Set a longer timeout for production (increase to 60 seconds)
+            signal: AbortSignal.timeout(60000) // 60 seconds timeout (increased from 30 seconds)
+          });
+          
+          // If we get a response (even an error response), break out of the retry loop
+          break;
+        } catch (error: unknown) {
+          // Only retry on timeout errors
+          const retryError = error as { code?: number };
+          if (retryError.code === 23) { // TIMEOUT_ERR
+            retryCount++;
+            
+            if (retryCount > maxRetries) {
+              console.log("Maximum retries reached, giving up on backend connection");
+              throw error; // Re-throw to be caught by the outer catch block
+            }
+            
+            // Exponential backoff (1s, 2s, 4s, etc.)
+            const backoffTime = Math.pow(2, retryCount - 1) * 1000;
+            console.log(`Timeout error, waiting ${backoffTime}ms before retry ${retryCount}/${maxRetries}`);
+            await new Promise(resolve => setTimeout(resolve, backoffTime));
+          } else {
+            // For non-timeout errors, stop retrying
+            console.error("Non-timeout error during fetch:", error);
+            throw error; // Re-throw to be caught by the outer catch block
+          }
+        }
+      }
+      
+      // If we don't have a response after all retries, throw an error
+      if (!response) {
+        throw new Error("Failed to get response from backend after multiple attempts");
+      }
       
       console.log("Backend response status:", response.status);
       
@@ -100,18 +141,59 @@ export async function POST(request: NextRequest) {
         try {
           console.log("Attempting second connection attempt with alternative endpoint");
           
-          // Try an alternative endpoint structure
-          const secondResponse = await fetch(`${backendUrl}/ai-chef/premium/ai-chef`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(authToken ? { 'Authorization': authToken } : {}),
-              'Referer': request.headers.get('referer') || 'https://fusion-meals-new.vercel.app',
-              'Origin': 'https://fusion-meals-new.vercel.app'
-            },
-            body: JSON.stringify(requestBody),
-            signal: AbortSignal.timeout(30000)
-          });
+          // Apply the same retry mechanism for the second attempt
+          let secondResponse: Response | undefined;
+          let secondRetryCount = 0;
+          const secondMaxRetries = 2; // Maximum number of retries
+          
+          while (secondRetryCount <= secondMaxRetries) {
+            try {
+              if (secondRetryCount > 0) {
+                console.log(`Retry attempt ${secondRetryCount}/${secondMaxRetries} for second connection...`);
+              }
+              
+              // Try an alternative endpoint structure
+              secondResponse = await fetch(`${backendUrl}/ai-chef/premium/ai-chef`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(authToken ? { 'Authorization': authToken } : {}),
+                  'Referer': request.headers.get('referer') || 'https://fusion-meals-new.vercel.app',
+                  'Origin': 'https://fusion-meals-new.vercel.app'
+                },
+                body: JSON.stringify(requestBody),
+                signal: AbortSignal.timeout(60000) // 60 seconds timeout (increased from 30 seconds)
+              });
+              
+              // If we get a response, break out of retry loop
+              break;
+            } catch (error: unknown) {
+              // Only retry on timeout errors
+              const retryError = error as { code?: number };
+              if (retryError.code === 23) { // TIMEOUT_ERR
+                secondRetryCount++;
+                
+                if (secondRetryCount > secondMaxRetries) {
+                  console.log("Maximum retries reached for second attempt, giving up");
+                  throw error;
+                }
+                
+                // Exponential backoff (1s, 2s, 4s, etc.)
+                const backoffTime = Math.pow(2, secondRetryCount - 1) * 1000;
+                console.log(`Timeout error, waiting ${backoffTime}ms before retry ${secondRetryCount}/${secondMaxRetries}`);
+                await new Promise(resolve => setTimeout(resolve, backoffTime));
+              } else {
+                // For non-timeout errors, stop retrying
+                console.error("Non-timeout error during second fetch:", error);
+                throw error;
+              }
+            }
+          }
+          
+          // If we don't have a response after all retries, throw an error
+          if (!secondResponse) {
+            throw new Error("Failed to get response from second attempt after multiple retries");
+          }
           
           console.log("Second attempt response status:", secondResponse.status);
           

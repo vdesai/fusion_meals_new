@@ -24,6 +24,18 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString()
     });
     
+    // Extract cookies from request to pass along
+    const cookies = request.cookies.getAll();
+    console.log("Cookies from request:", cookies);
+    
+    // Extract potential authentication tokens from cookies or headers
+    let authToken = '';
+    if (cookies.some(cookie => cookie.name === 'auth_token')) {
+      authToken = cookies.find(cookie => cookie.name === 'auth_token')?.value || '';
+    } else if (request.headers.has('authorization')) {
+      authToken = request.headers.get('authorization') || '';
+    }
+    
     // Special handling for birthday occasions with week timeframe - generate locally to avoid timeouts
     if (body.request_type === "meal_plan" && body.occasion === "birthday" && body.timeframe === "week") {
       console.log("Birthday meal plan requested with week timeframe - generating locally to avoid timeout");
@@ -33,7 +45,51 @@ export async function POST(request: NextRequest) {
     // Handle micronutrient analysis requests separately (these are lightweight and don't need the backend)
     if (body.request_type === "micronutrient_analysis") {
       console.log("Handling micronutrient analysis request");
-      return handleMicronutrientAnalysis(body);
+      
+      try {
+        // Use the dedicated micronutrient endpoint instead of the general AI Chef endpoint
+        const micronutrientEndpoint = `${BACKEND_URL}/premium/micronutrient-analysis`;
+        console.log("Using micronutrient-specific endpoint:", micronutrientEndpoint);
+        
+        // Format the request for the new endpoint
+        const micronutrientRequest = {
+          breakfast: body.meals.breakfast,
+          lunch: body.meals.lunch,
+          dinner: body.meals.dinner,
+          snacks: Array.isArray(body.meals.snacks) ? body.meals.snacks : [],
+          day_name: body.day_name || "Daily Analysis"
+        };
+        
+        console.log("Sending micronutrient analysis request:", micronutrientRequest);
+        
+        const response = await fetch(micronutrientEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken ? { 'Authorization': authToken } : {}),
+            'Referer': request.headers.get('referer') || 'https://fusion-meals-new.vercel.app',
+            'Origin': 'https://fusion-meals-new.vercel.app'
+          },
+          body: JSON.stringify(micronutrientRequest),
+          signal: AbortSignal.timeout(30000) // 30-second timeout
+        });
+        
+        if (!response.ok) {
+          console.error(`Micronutrient API error: ${response.status} ${response.statusText}`);
+          // Fall back to local analysis on backend error
+          console.log("Falling back to local micronutrient analysis");
+          return handleMicronutrientAnalysis(body);
+        }
+        
+        const data = await response.json();
+        console.log("Micronutrient analysis response received from backend");
+        return NextResponse.json(data);
+      } catch (error) {
+        console.error("Error calling micronutrient endpoint:", error);
+        // If the backend call fails, fall back to local analysis
+        console.log("Error with backend micronutrient analysis, falling back to local analysis");
+        return handleMicronutrientAnalysis(body);
+      }
     }
     
     console.log("Attempting to connect to backend API for AI Chef:", body.request_type);
@@ -48,18 +104,6 @@ export async function POST(request: NextRequest) {
     // Get request headers for debugging
     const requestHeaders = Object.fromEntries(request.headers);
     console.log("Request headers:", JSON.stringify(requestHeaders, null, 2));
-    
-    // Extract cookies from request to pass along
-    const cookies = request.cookies.getAll();
-    console.log("Cookies from request:", cookies);
-    
-    // Extract potential authentication tokens from cookies or headers
-    let authToken = '';
-    if (cookies.some(cookie => cookie.name === 'auth_token')) {
-      authToken = cookies.find(cookie => cookie.name === 'auth_token')?.value || '';
-    } else if (request.headers.has('authorization')) {
-      authToken = request.headers.get('authorization') || '';
-    }
     
     // Ensure the request_type is preserved exactly as sent by the client
     // This fixes cases where recipe_curation might be misinterpreted as student_meals

@@ -2525,10 +2525,14 @@ export default function AIChefPremium() {
           lunch: `${day.lunch.name}: ${day.lunch.description}`,
           dinner: `${day.dinner.name}: ${day.dinner.description}`,
           snacks: day.snacks ? day.snacks.map(snack => `${snack.name}: ${snack.description || ''}`) : []
-        }
+        },
+        day_name: day.day // Include day name for better tracking in the backend
       };
       
       console.log("Sending micronutrient request:", requestData);
+      
+      // Track start time for performance monitoring
+      const requestStartTime = Date.now();
       
       // Make API request
       const response = await fetch('/api/ai-chef/premium/ai-chef', {
@@ -2538,6 +2542,10 @@ export default function AIChefPremium() {
         },
         body: JSON.stringify(requestData),
       });
+      
+      // Log request duration
+      const requestDuration = Date.now() - requestStartTime;
+      console.log(`Micronutrient analysis completed in ${requestDuration}ms`);
       
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);

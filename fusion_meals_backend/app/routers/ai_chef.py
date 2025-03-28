@@ -70,6 +70,14 @@ class AIChefResponse(BaseModel):
     request_remaining: int
     suggestions: List[str]
 
+# Add new model for micronutrient analysis requests
+class MicronutrientAnalysisRequest(BaseModel):
+    breakfast: str
+    lunch: str 
+    dinner: str
+    snacks: List[str] = []
+    day_name: Optional[str] = None
+
 def get_user_subscription(session_id: Optional[str] = Cookie(None)):
     """
     Get user subscription details from the session ID
@@ -303,6 +311,81 @@ async def get_subscription_status(user_data: Optional[Dict] = Depends(get_user_s
         "user_id": user_data["user_id"],
         "subscription": user_data["subscription"]
     }
+
+@router.post("/premium/micronutrient-analysis", response_model=AIChefResponse)
+async def analyze_single_day_micronutrients(
+    req: MicronutrientAnalysisRequest, 
+    user_data: Optional[Dict] = Depends(get_user_subscription)
+):
+    """
+    Lightweight endpoint to analyze micronutrients for a single day's meals.
+    This helps avoid timeout issues with larger meal plan requests.
+    """
+    # Check if user has premium access
+    if not user_data or user_data.get("subscription", {}).get("subscription_level") != "premium":
+        raise HTTPException(status_code=403, detail={
+            "message": "This is a premium feature. Please upgrade your subscription to access micronutrient analysis.",
+            "upgrade_url": "/subscription/upgrade"
+        })
+    
+    # Get user preferences
+    user_preferences = user_data["subscription"].get("preferences", {})
+    
+    # Prepare prompt specifically for micronutrient analysis
+    prompt = generate_micronutrient_analysis_prompt(req, user_preferences)
+    
+    try:
+        # Use shorter timeout for this lightweight request
+        timeout = 30  # 30 seconds should be plenty for single-day analysis
+        
+        start_time = time.time()
+        response = client.chat.completions.create(
+            model="gpt-4-turbo",
+            response_format={"type": "json_object"},
+            timeout=timeout,
+            messages=[
+                {"role": "system", "content": "You are a nutrition expert AI that analyzes meals for micronutrient content. Provide detailed, accurate micronutrient analysis in JSON format."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        
+        # Parse response
+        response_content = json.loads(response.choices[0].message.content)
+        print(f"Micronutrient analysis completed in {time.time() - start_time:.2f} seconds")
+        
+        # Ensure proper formatting for micronutrients
+        if "micronutrients" in response_content:
+            micronutrients = response_content["micronutrients"]
+            
+            # Ensure all micronutrients use the "XX% DV" format
+            for key, value in micronutrients.items():
+                if not isinstance(value, str):
+                    micronutrients[key] = f"{value}% DV"
+                elif not value.endswith("% DV") and not key.endswith("_sources"):
+                    micronutrients[key] = f"{value}% DV" if value else "0% DV"
+        
+        # Prepare and return the response
+        return AIChefResponse(
+            premium_content={
+                "micronutrient_analysis": response_content.get("micronutrients", {}),
+                "day_name": req.day_name or "Daily Analysis"
+            },
+            user_subscription={
+                "level": user_data["subscription"]["subscription_level"],
+                "expiry_date": user_data["subscription"]["expiry_date"]
+            },
+            request_remaining=30,  # Assume 30 requests remaining
+            suggestions=[
+                "Try adding more leafy greens for increased iron and folate",
+                "Consider dairy or fortified alternatives for calcium",
+                "Colorful fruits and vegetables increase your vitamin intake",
+                "Fatty fish like salmon provide essential omega-3 fatty acids"
+            ]
+        )
+        
+    except Exception as e:
+        print(f"Error during micronutrient analysis: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error analyzing micronutrients: {str(e)}")
 
 def generate_meal_plan_prompt(req: AIChefRequest, user_preferences: Dict) -> str:
     """Generate prompt for meal planning"""
@@ -779,4 +862,62 @@ def generate_optimized_weekly_meal_plan_prompt(req: AIChefRequest, user_preferen
       }}
     }}
     """
+    return prompt
+
+def generate_micronutrient_analysis_prompt(req: MicronutrientAnalysisRequest, user_preferences: Dict) -> str:
+    """
+    Generate a prompt specifically for micronutrient analysis of a single day's meals.
+    This is optimized for fast, accurate responses.
+    """
+    # Prepare the prompt with relevant meal information
+    prompt = f"""
+    As a nutrition expert, analyze the following meals for a single day and provide detailed micronutrient information:
+    
+    Breakfast: {req.breakfast}
+    Lunch: {req.lunch}
+    Dinner: {req.dinner}
+    """
+    
+    if req.snacks:
+        prompt += "\nSnacks:\n"
+        for i, snack in enumerate(req.snacks):
+            prompt += f"- {snack}\n"
+    
+    # Include day name if available
+    if req.day_name:
+        prompt += f"\nDay: {req.day_name}\n"
+    
+    # Add user preferences if relevant
+    if user_preferences:
+        if "dietary_restrictions" in user_preferences and user_preferences["dietary_restrictions"]:
+            prompt += f"\nDietary Restrictions: {', '.join(user_preferences['dietary_restrictions'])}\n"
+    
+    # Request format for the response
+    prompt += """
+    Please provide a comprehensive micronutrient analysis in JSON format with the following:
+    
+    1. Provide percentages of Daily Value (%DV) for all essential vitamins and minerals:
+       - Vitamin A, B1 (Thiamin), B2 (Riboflavin), B3 (Niacin), B5 (Pantothenic Acid), 
+         B6 (Pyridoxine), B9 (Folate), B12 (Cobalamin), C, D, E, K
+       - Minerals: Calcium, Iron, Magnesium, Phosphorus, Potassium, Sodium, Zinc, 
+         Copper, Manganese, Selenium, Iodine
+    
+    2. For each micronutrient, list the primary food sources from the meals
+    
+    3. Format all percentages as "XX% DV" (e.g., "80% DV")
+    
+    4. Provide specific food sources for:
+       - Vitamin A sources
+       - B vitamins sources
+       - Vitamin C sources
+       - Vitamin D sources
+       - Calcium sources
+       - Iron sources
+       - Magnesium sources
+       - Zinc sources
+    
+    Return your analysis as a JSON object with a 'micronutrients' field containing all this information.
+    Make sure your response is accurate based on the actual food components in the meals.
+    """
+    
     return prompt 

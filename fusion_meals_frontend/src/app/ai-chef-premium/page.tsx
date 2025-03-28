@@ -311,6 +311,13 @@ export default function AIChefPremium() {
         data = JSON.parse(responseText);
         console.log('AI Chef API response received:', data);
         
+        // Debug log specifically for micronutrients
+        if (data.premium_content?.nutrition_summary?.micronutrients) {
+          console.log('Micronutrient data received:', JSON.stringify(data.premium_content.nutrition_summary.micronutrients, null, 2));
+        } else {
+          console.warn('No micronutrient data found in the response');
+        }
+        
         // Check specifically for demo data indicators
         if (
           requestType === 'recipe_curation' && 
@@ -859,49 +866,49 @@ export default function AIChefPremium() {
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'success.lighter' }}>
                                       <Typography variant="caption">Vitamin B1 (Thiamin)</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_b1 || '95% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_b1 || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'success.lighter' }}>
                                       <Typography variant="caption">Vitamin B2 (Riboflavin)</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_b2 || '105% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_b2 || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'success.lighter' }}>
                                       <Typography variant="caption">Vitamin B3 (Niacin)</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_b3 || '120% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_b3 || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'success.lighter' }}>
                                       <Typography variant="caption">Vitamin B5 (Pantothenic Acid)</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_b5 || '85% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_b5 || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'success.lighter' }}>
                                       <Typography variant="caption">Vitamin B6 (Pyridoxine)</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_b6 || '110% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_b6 || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'success.lighter' }}>
                                       <Typography variant="caption">Vitamin B9 (Folate)</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.folate || '125% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.folate || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'success.lighter' }}>
                                       <Typography variant="caption">Vitamin B12 (Cobalamin)</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_b12 || '130% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_b12 || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'success.lighter' }}>
                                       <Typography variant="caption">Vitamin C (Ascorbic Acid)</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_c || '180% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_c || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                 </Grid>
@@ -916,25 +923,25 @@ export default function AIChefPremium() {
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'warning.lighter' }}>
                                       <Typography variant="caption">Vitamin A (Retinol)</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_a || '120% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_a || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'warning.lighter' }}>
                                       <Typography variant="caption">Vitamin D (Calciferol)</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_d || '75% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_d || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'warning.lighter' }}>
                                       <Typography variant="caption">Vitamin E (Tocopherol)</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_e || '90% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_e || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'warning.lighter' }}>
                                       <Typography variant="caption">Vitamin K (Phylloquinone)</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_k || '115% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.vitamin_k || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                 </Grid>
@@ -952,31 +959,31 @@ export default function AIChefPremium() {
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'primary.lighter' }}>
                                       <Typography variant="caption">Calcium</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.calcium || '95% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.calcium || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'primary.lighter' }}>
                                       <Typography variant="caption">Magnesium</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.magnesium || '85% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.magnesium || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'primary.lighter' }}>
                                       <Typography variant="caption">Phosphorus</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.phosphorus || '110% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.phosphorus || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'primary.lighter' }}>
                                       <Typography variant="caption">Potassium</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.potassium || '90% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.potassium || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'primary.lighter' }}>
                                       <Typography variant="caption">Sodium</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.sodium || '70% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.sodium || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                 </Grid>
@@ -991,37 +998,37 @@ export default function AIChefPremium() {
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'secondary.lighter' }}>
                                       <Typography variant="caption">Iron</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.iron || '85% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.iron || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'secondary.lighter' }}>
                                       <Typography variant="caption">Zinc</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.zinc || '105% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.zinc || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'secondary.lighter' }}>
                                       <Typography variant="caption">Copper</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.copper || '95% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.copper || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'secondary.lighter' }}>
                                       <Typography variant="caption">Manganese</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.manganese || '120% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.manganese || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'secondary.lighter' }}>
                                       <Typography variant="caption">Selenium</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.selenium || '110% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.selenium || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                   <Grid item xs={6}>
                                     <Paper sx={{ p: 1, textAlign: 'center', bgcolor: 'secondary.lighter' }}>
                                       <Typography variant="caption">Iodine</Typography>
-                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.iodine || '100% DV'}</Typography>
+                                      <Typography variant="subtitle2">{content.nutrition_summary.micronutrients?.iodine || '-'}</Typography>
                                     </Paper>
                                   </Grid>
                                 </Grid>
@@ -1043,18 +1050,18 @@ export default function AIChefPremium() {
                               <Grid container spacing={2}>
                                 <Grid item xs={12} md={6}>
                                   <Box sx={{ pl: 2 }}>
-                                    <Typography variant="body2">• <strong>Vitamin A:</strong> {content.nutrition_summary.micronutrients?.vitamin_a_sources || "Carrots, sweet potatoes, spinach, kale"}</Typography>
-                                    <Typography variant="body2">• <strong>B Vitamins:</strong> {content.nutrition_summary.micronutrients?.b_vitamins_sources || "Whole grains, eggs, leafy greens, nuts"}</Typography>
-                                    <Typography variant="body2">• <strong>Vitamin C:</strong> {content.nutrition_summary.micronutrients?.vitamin_c_sources || "Citrus fruits, bell peppers, berries"}</Typography>
-                                    <Typography variant="body2">• <strong>Vitamin D:</strong> {content.nutrition_summary.micronutrients?.vitamin_d_sources || "Fatty fish, egg yolks, fortified foods"}</Typography>
+                                    <Typography variant="body2">• <strong>Vitamin A:</strong> {content.nutrition_summary.micronutrients?.vitamin_a_sources}</Typography>
+                                    <Typography variant="body2">• <strong>B Vitamins:</strong> {content.nutrition_summary.micronutrients?.b_vitamins_sources}</Typography>
+                                    <Typography variant="body2">• <strong>Vitamin C:</strong> {content.nutrition_summary.micronutrients?.vitamin_c_sources}</Typography>
+                                    <Typography variant="body2">• <strong>Vitamin D:</strong> {content.nutrition_summary.micronutrients?.vitamin_d_sources}</Typography>
                                   </Box>
                                 </Grid>
                                 <Grid item xs={12} md={6}>
                                   <Box sx={{ pl: 2 }}>
-                                    <Typography variant="body2">• <strong>Calcium:</strong> {content.nutrition_summary.micronutrients?.calcium_sources || "Dairy products, leafy greens, fortified plant milks"}</Typography>
-                                    <Typography variant="body2">• <strong>Iron:</strong> {content.nutrition_summary.micronutrients?.iron_sources || "Lean meats, beans, lentils, spinach"}</Typography>
-                                    <Typography variant="body2">• <strong>Magnesium:</strong> {content.nutrition_summary.micronutrients?.magnesium_sources || "Nuts, seeds, whole grains, legumes"}</Typography>
-                                    <Typography variant="body2">• <strong>Zinc:</strong> {content.nutrition_summary.micronutrients?.zinc_sources || "Meat, shellfish, legumes, seeds"}</Typography>
+                                    <Typography variant="body2">• <strong>Calcium:</strong> {content.nutrition_summary.micronutrients?.calcium_sources}</Typography>
+                                    <Typography variant="body2">• <strong>Iron:</strong> {content.nutrition_summary.micronutrients?.iron_sources}</Typography>
+                                    <Typography variant="body2">• <strong>Magnesium:</strong> {content.nutrition_summary.micronutrients?.magnesium_sources}</Typography>
+                                    <Typography variant="body2">• <strong>Zinc:</strong> {content.nutrition_summary.micronutrients?.zinc_sources}</Typography>
                                   </Box>
                                 </Grid>
                               </Grid>

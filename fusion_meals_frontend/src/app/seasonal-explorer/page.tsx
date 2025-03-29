@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, Suspense } from 'react';
 import { 
   Container, 
   Typography, 
@@ -13,7 +13,8 @@ import {
   Divider,
   useTheme,
   Tab,
-  Tabs
+  Tabs,
+  CircularProgress
 } from '@mui/material';
 import { CalendarMonth, RestaurantMenu, LocalFlorist } from '@mui/icons-material';
 import Link from 'next/link';
@@ -28,7 +29,8 @@ import {
   getMonthName
 } from '@/data/seasonal-ingredients';
 
-export default function SeasonalExplorer() {
+// Create a client component that uses useSearchParams
+function SeasonalExplorerContent() {
   const theme = useTheme();
   const searchParams = useSearchParams();
   const initialSeason = (searchParams.get('season') as SeasonType) || getCurrentSeason();
@@ -336,7 +338,7 @@ export default function SeasonalExplorer() {
           Ready to cook with the seasons?
         </Typography>
         <Typography variant="body1" paragraph>
-          Fusion Meals helps you create delicious dishes using what's currently in season.
+          Fusion Meals helps you create delicious dishes using what&apos;s currently in season.
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
           <Button 
@@ -366,5 +368,26 @@ export default function SeasonalExplorer() {
         </Box>
       </Box>
     </Container>
+  );
+}
+
+// Loading fallback for Suspense
+function LoadingFallback() {
+  return (
+    <Container maxWidth="lg" sx={{ py: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+      <Box sx={{ textAlign: 'center' }}>
+        <CircularProgress size={60} sx={{ mb: 3 }} />
+        <Typography variant="h6">Loading Seasonal Explorer...</Typography>
+      </Box>
+    </Container>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function SeasonalExplorer() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <SeasonalExplorerContent />
+    </Suspense>
   );
 } 

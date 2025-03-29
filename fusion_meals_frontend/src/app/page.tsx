@@ -128,6 +128,66 @@ const HomePage = () => {
           </div>
         </section>
 
+        {/* New Cooking Education Hub Feature */}
+        <section className="bg-gradient-to-r from-amber-500 to-orange-600 py-16 px-4 md:px-8 text-white rounded-lg my-16">
+          <div className="container mx-auto">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="md:w-1/2 flex justify-center order-2 md:order-1">
+                <div className="grid grid-cols-2 gap-4 max-w-md">
+                  <div className="bg-white p-3 rounded-lg shadow-lg transform -rotate-2">
+                    <img 
+                      src="/images/education/techniques/saute.jpg" 
+                      alt="Sautéing Technique" 
+                      className="w-full h-32 object-cover rounded"
+                    />
+                    <p className="text-orange-700 font-medium text-center mt-2">Techniques</p>
+                  </div>
+                  <div className="bg-white p-3 rounded-lg shadow-lg transform rotate-3">
+                    <img 
+                      src="/images/education/ingredients/herbs.jpg" 
+                      alt="Ingredients Knowledge" 
+                      className="w-full h-32 object-cover rounded"
+                    />
+                    <p className="text-orange-700 font-medium text-center mt-2">Ingredients</p>
+                  </div>
+                  <div className="bg-white p-3 rounded-lg shadow-lg transform rotate-2">
+                    <img 
+                      src="/images/education/equipment/knives.jpg" 
+                      alt="Kitchen Equipment" 
+                      className="w-full h-32 object-cover rounded"
+                    />
+                    <p className="text-orange-700 font-medium text-center mt-2">Equipment</p>
+                  </div>
+                  <div className="bg-white p-3 rounded-lg shadow-lg transform -rotate-3">
+                    <img 
+                      src="/images/education/techniques/roast.jpg" 
+                      alt="Cooking Skills" 
+                      className="w-full h-32 object-cover rounded"
+                    />
+                    <p className="text-orange-700 font-medium text-center mt-2">Solutions</p>
+                  </div>
+                </div>
+              </div>
+              <div className="md:w-1/2 order-1 md:order-2">
+                <div className="inline-block px-3 py-1 bg-white text-orange-700 rounded-full text-sm font-semibold mb-4">
+                  NEW FEATURE
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Cooking Education Hub</h2>
+                <p className="text-lg mb-6">
+                  Master cooking techniques, understand ingredients, and solve common kitchen challenges with our
+                  comprehensive cooking education resources.
+                </p>
+                <Link 
+                  href="/cooking-education" 
+                  className="inline-flex items-center bg-white text-orange-700 hover:bg-opacity-90 font-medium py-3 px-6 rounded-full transition-all"
+                >
+                  Enhance Your Cooking Skills 👨‍🍳
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* New Fusion Builder Feature */}
         <section className="py-12 bg-gradient-to-r from-purple-50 to-blue-50">
           <div className="container mx-auto px-4 text-center">

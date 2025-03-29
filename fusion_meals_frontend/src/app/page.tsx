@@ -188,6 +188,57 @@ const HomePage = () => {
           </div>
         </section>
 
+        {/* Restaurant-to-Home Feature */}
+        <section className="bg-gradient-to-r from-red-600 to-pink-600 py-16 px-4 md:px-8 text-white rounded-lg my-16">
+          <div className="container mx-auto">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="md:w-1/2">
+                <div className="inline-block px-3 py-1 bg-white text-red-700 rounded-full text-sm font-semibold mb-4">
+                  NEW FEATURE
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Restaurant-to-Home Recreator</h2>
+                <p className="text-lg mb-6">
+                  Transform your favorite restaurant dishes into healthier, budget-friendly, and quicker homemade versions.
+                  Save money, eat better, and still enjoy the flavors you love!
+                </p>
+                <Link 
+                  href="/restaurant-recreator" 
+                  className="inline-flex items-center bg-white text-red-700 hover:bg-opacity-90 font-medium py-3 px-6 rounded-full transition-all"
+                >
+                  Recreate Restaurant Favorites 🍽️
+                </Link>
+              </div>
+              <div className="md:w-1/2 flex justify-center">
+                <div className="relative">
+                  <div className="absolute -top-4 -right-4 bg-red-100 text-red-700 rounded-full py-1 px-3 font-bold text-sm shadow-md">
+                    SAVE 75%
+                  </div>
+                  <div className="bg-white p-4 rounded-lg shadow-lg transform rotate-2 z-10 relative">
+                    <img 
+                      src="/images/restaurant-dishes/fettuccine-alfredo.jpg" 
+                      alt="Restaurant Dish" 
+                      className="w-full h-40 object-cover rounded"
+                    />
+                    <div className="mt-2 flex items-center justify-between">
+                      <div>
+                        <p className="text-red-700 font-medium">Fettuccine Alfredo</p>
+                        <p className="text-gray-500 text-sm">Olive Garden</p>
+                      </div>
+                      <div className="flex items-center">
+                        <p className="text-red-600 line-through mr-2">$18.99</p>
+                        <p className="text-green-600 font-bold">$3.99</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="absolute -bottom-4 -left-4 bg-green-100 text-green-700 rounded-full py-1 px-3 font-bold text-sm shadow-md">
+                    -750 CALORIES
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* New Fusion Builder Feature */}
         <section className="py-12 bg-gradient-to-r from-purple-50 to-blue-50">
           <div className="container mx-auto px-4 text-center">

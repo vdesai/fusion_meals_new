@@ -68,6 +68,29 @@ const HomePage = () => {
           </div>
         </section>
 
+        {/* New Fusion Builder Feature */}
+        <section className="py-12 bg-gradient-to-r from-purple-50 to-blue-50">
+          <div className="container mx-auto px-4 text-center">
+            <div className="inline-block mb-4 px-4 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">
+              NEW FEATURE
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+              Fusion Recipe Builder
+            </h2>
+            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+              Blend culinary traditions to create unique fusion recipes. Combine techniques, 
+              ingredients, and flavors from different cuisines around the world.
+            </p>
+            <Link
+              href="/fusion-builder"
+              className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-8 rounded-full transition duration-300 text-center inline-flex items-center"
+            >
+              <span className="mr-2">🍲</span>
+              Create Fusion Recipes
+            </Link>
+          </div>
+        </section>
+
         {/* Feature Highlights 🌈 */}
         <section className="grid grid-cols-1 md:grid-cols-5 gap-6 mt-12">
           <div className="bg-white dark:bg-gray-700 rounded-lg p-6 shadow-md text-center transition-all duration-300">

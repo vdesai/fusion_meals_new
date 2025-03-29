@@ -10,7 +10,6 @@ import {
   Step, 
   StepLabel, 
   Button, 
-  Grid,
   CircularProgress
 } from '@mui/material';
 import Link from 'next/link';
@@ -23,10 +22,34 @@ import FusionResult from '@/components/fusion-builder/FusionResult';
 
 const steps = ['Select Cuisines', 'Choose Techniques', 'Define Flavor Profile', 'Set Preferences'];
 
+// Define an interface for the fusion result
+interface FusionRecipe {
+  name: string;
+  description: string;
+  ingredients: string[];
+  instructions: string[];
+  cookingTime: string;
+  servings: number;
+  difficultyLevel: string;
+  nutritionalInfo: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  cuisineFusion: {
+    primary: string;
+    secondary: string;
+    techniques: string[];
+    flavorProfile: string;
+  };
+  image: string;
+}
+
 export default function FusionBuilder() {
   const [activeStep, setActiveStep] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [fusionResult, setFusionResult] = useState<any>(null);
+  const [fusionResult, setFusionResult] = useState<FusionRecipe | null>(null);
   
   // Selection states
   const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
@@ -85,61 +108,26 @@ export default function FusionBuilder() {
     setIsGenerating(true);
     
     try {
-      // In a real app, this would be an API call to your backend
-      // For now, we'll simulate a response after a delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock response data
-      const mockFusionResult = {
-        name: "Thai-Italian Fusion Pasta",
-        description: "A vibrant fusion dish combining the aromatic herbs of Thailand with the rich traditions of Italian pasta making. This dish balances the creamy elements of Italian cuisine with the bright, spicy notes of Thai cooking.",
-        ingredients: [
-          "8 oz linguine pasta",
-          "1 cup coconut milk",
-          "2 tbsp red curry paste",
-          "1/4 cup fresh basil, chopped",
-          "1/4 cup fresh cilantro, chopped",
-          "2 tbsp olive oil",
-          "3 cloves garlic, minced",
-          "1 red bell pepper, sliced thin",
-          "1 cup cherry tomatoes, halved",
-          "2 tbsp fish sauce (or soy sauce for vegetarian)",
-          "1 lime, juiced",
-          "1/4 cup grated Parmesan cheese",
-          "Red pepper flakes, to taste",
-          "Salt and pepper, to taste"
-        ],
-        instructions: [
-          "Bring a large pot of salted water to a boil. Cook linguine according to package directions until al dente. Reserve 1/2 cup pasta water before draining.",
-          "While pasta cooks, heat olive oil in a large skillet over medium heat. Add garlic and sauté until fragrant, about 30 seconds.",
-          "Add red bell pepper and cherry tomatoes, cooking until softened, about 3-4 minutes.",
-          "Stir in red curry paste and cook for 1 minute until fragrant.",
-          "Pour in coconut milk and bring to a simmer. Cook for 2-3 minutes until slightly thickened.",
-          "Add fish sauce (or soy sauce) and lime juice, stirring to combine.",
-          "Add drained pasta to the sauce, tossing to coat. If sauce is too thick, add reserved pasta water a little at a time.",
-          "Remove from heat and stir in fresh basil, cilantro, and half of the Parmesan cheese.",
-          "Season with salt, pepper, and red pepper flakes to taste.",
-          "Serve immediately, garnished with remaining Parmesan cheese and additional herbs if desired."
-        ],
-        cookingTime: "25 minutes",
-        servings: 4,
-        difficultyLevel: "Medium",
-        nutritionalInfo: {
-          calories: 420,
-          protein: 12,
-          carbs: 48,
-          fat: 22
+      // Call our API endpoint that connects to the backend
+      const response = await fetch('/api/fusion-builder/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        cuisineFusion: {
-          primary: "Italian",
-          secondary: "Thai",
-          techniques: ["Al dente pasta cooking", "Thai curry preparation"],
-          flavorProfile: "Creamy, spicy, aromatic with umami notes"
-        },
-        image: "/images/generated/thai-italian-fusion.jpg"
-      };
+        body: JSON.stringify({
+          cuisines: selectedCuisines,
+          techniques: selectedTechniques,
+          flavorProfile,
+          preferences
+        }),
+      });
       
-      setFusionResult(mockFusionResult);
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+      
+      const fusionRecipe = await response.json();
+      setFusionResult(fusionRecipe);
     } catch (error) {
       console.error("Error generating fusion recipe:", error);
       // Handle error state
@@ -245,7 +233,7 @@ export default function FusionBuilder() {
         </Typography>
         <Typography variant="body1">
           Fusion cuisine blends elements of different culinary traditions to create innovative, cross-cultural dishes. 
-          It's about finding harmony between diverse ingredients, techniques, and flavor profiles to craft something new 
+          It&apos;s about finding harmony between diverse ingredients, techniques, and flavor profiles to craft something new 
           and exciting. Our Fusion Recipe Builder uses AI to help you explore these creative combinations with confidence.
         </Typography>
       </Box>

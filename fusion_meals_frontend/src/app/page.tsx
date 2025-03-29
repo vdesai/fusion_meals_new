@@ -68,6 +68,66 @@ const HomePage = () => {
           </div>
         </section>
 
+        {/* Add Seasonal Recipe Explorer section before the about section */}
+        <section className="bg-gradient-to-r from-lime-600 to-green-700 py-16 px-4 md:px-8 text-white rounded-lg my-16">
+          <div className="container mx-auto">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="md:w-1/2">
+                <div className="inline-block px-3 py-1 bg-white text-lime-700 rounded-full text-sm font-semibold mb-4">
+                  NEW FEATURE
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Seasonal Recipe Explorer</h2>
+                <p className="text-lg mb-6">
+                  Discover ingredients at their peak freshness and create delicious dishes that celebrate each season.
+                  Cook with what&apos;s in season for maximum flavor and nutrition.
+                </p>
+                <Link 
+                  href="/seasonal-explorer" 
+                  className="inline-flex items-center bg-white text-lime-700 hover:bg-opacity-90 font-medium py-3 px-6 rounded-full transition-all"
+                >
+                  Explore Seasonal Ingredients 🍎
+                </Link>
+              </div>
+              <div className="md:w-1/2 flex justify-center">
+                <div className="grid grid-cols-2 gap-3 max-w-md">
+                  <div className="bg-white p-2 rounded-lg shadow-lg transform rotate-3">
+                    <img 
+                      src="/images/seasons/spring-bg.jpg" 
+                      alt="Spring Ingredients" 
+                      className="w-full h-32 object-cover rounded"
+                    />
+                    <p className="text-lime-700 font-medium text-center mt-2">Spring</p>
+                  </div>
+                  <div className="bg-white p-2 rounded-lg shadow-lg transform -rotate-2">
+                    <img 
+                      src="/images/seasons/summer-bg.jpg" 
+                      alt="Summer Ingredients" 
+                      className="w-full h-32 object-cover rounded"
+                    />
+                    <p className="text-lime-700 font-medium text-center mt-2">Summer</p>
+                  </div>
+                  <div className="bg-white p-2 rounded-lg shadow-lg transform -rotate-3">
+                    <img 
+                      src="/images/seasons/fall-bg.jpg" 
+                      alt="Fall Ingredients" 
+                      className="w-full h-32 object-cover rounded"
+                    />
+                    <p className="text-lime-700 font-medium text-center mt-2">Fall</p>
+                  </div>
+                  <div className="bg-white p-2 rounded-lg shadow-lg transform rotate-2">
+                    <img 
+                      src="/images/seasons/winter-bg.jpg" 
+                      alt="Winter Ingredients" 
+                      className="w-full h-32 object-cover rounded"
+                    />
+                    <p className="text-lime-700 font-medium text-center mt-2">Winter</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* New Fusion Builder Feature */}
         <section className="py-12 bg-gradient-to-r from-purple-50 to-blue-50">
           <div className="container mx-auto px-4 text-center">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box,
   Typography,
@@ -32,152 +32,88 @@ import {
   TrendingDown,
   LocalDining
 } from '@mui/icons-material';
+import { DishTransformation } from '../../types/restaurant';
+import { restaurantService } from '../../services/restaurantService';
 
-// Sample data structure
-interface DishTransformation {
-  originalName: string;
-  restaurantName: string;
-  estimatedCalories: number;
-  estimatedCost: number;
-  prepTime: number;
-  cookTime: number;
-  healthierVersion: {
-    name: string;
-    description: string;
-    calories: number;
-    costSavings: number;
-    healthBenefits: string[];
-    mainSubstitutions: {original: string, healthier: string}[];
-  };
-  budgetVersion: {
-    name: string;
-    description: string;
-    costSavings: number;
-    totalCost: number;
-    valueIngredients: string[];
-  };
-  quickVersion: {
-    name: string;
-    description: string;
-    totalTime: number;
-    timeSavings: number;
-    shortcuts: string[];
-  };
-  image: string;
-}
-
-// Sample data for demonstration
-const sampleTransformations: DishTransformation[] = [
-  {
-    originalName: "Creamy Fettuccine Alfredo",
-    restaurantName: "Olive Garden",
-    estimatedCalories: 1200,
-    estimatedCost: 18.99,
-    prepTime: 20,
-    cookTime: 15,
-    healthierVersion: {
-      name: "Greek Yogurt Fettuccine Alfredo",
-      description: "A lighter take on the classic using Greek yogurt instead of heavy cream, whole wheat pasta, and added vegetables for nutrients.",
-      calories: 450,
-      costSavings: 12.50,
-      healthBenefits: ["62% fewer calories", "Lower saturated fat", "Higher protein content", "Added fiber"],
-      mainSubstitutions: [
-        {original: "Heavy cream", healthier: "Greek yogurt"},
-        {original: "Regular pasta", healthier: "Whole wheat pasta"},
-        {original: "Extra butter", healthier: "Olive oil (reduced amount)"},
-        {original: "No vegetables", healthier: "Added broccoli and peas"}
-      ]
-    },
-    budgetVersion: {
-      name: "Budget-Friendly Alfredo",
-      description: "Use more affordable ingredients while maintaining creamy texture and flavor.",
-      costSavings: 15.00,
-      totalCost: 3.99,
-      valueIngredients: ["Use milk + flour instead of cream", "Add small amount of cream cheese", "Bulk up with inexpensive pasta", "Add frozen vegetables for volume"]
-    },
-    quickVersion: {
-      name: "15-Minute Alfredo",
-      description: "Streamlined version that doesn't sacrifice flavor but cuts prep and cooking time.",
-      totalTime: 15,
-      timeSavings: 20,
-      shortcuts: ["Use pre-grated Parmesan", "Skip reducing the sauce", "Cook pasta and sauce simultaneously", "Use microwave-steamed vegetables"]
-    },
-    image: "/images/restaurant-dishes/fettuccine-alfredo.jpg"
-  },
-  {
-    originalName: "Double Cheeseburger with Fries",
-    restaurantName: "Fast Food Chain",
-    estimatedCalories: 1450,
-    estimatedCost: 12.99,
-    prepTime: 15,
-    cookTime: 15,
-    healthierVersion: {
-      name: "Lean Turkey Burger with Sweet Potato Wedges",
-      description: "All the flavor with leaner meat, whole grain bun, and nutrient-rich sweet potato instead of fries.",
-      calories: 650,
-      costSavings: 7.00,
-      healthBenefits: ["55% fewer calories", "Lower sodium", "More fiber", "More nutrients from sweet potatoes"],
-      mainSubstitutions: [
-        {original: "Beef patty", healthier: "Lean turkey patty"},
-        {original: "White flour bun", healthier: "Whole grain bun"},
-        {original: "Deep-fried potatoes", healthier: "Baked sweet potato wedges"},
-        {original: "American cheese", healthier: "Thin slice of real cheddar"}
-      ]
-    },
-    budgetVersion: {
-      name: "Homestyle Budget Burger",
-      description: "Create a delicious burger at a fraction of the restaurant cost.",
-      costSavings: 9.00,
-      totalCost: 3.99,
-      valueIngredients: ["Make larger, thinner patties with less meat", "Make your own burger seasoning", "Bake fries instead of frying", "Buy buns on sale and freeze"]
-    },
-    quickVersion: {
-      name: "Express Burger Meal",
-      description: "Streamlined burger preparation that's ready in no time.",
-      totalTime: 15,
-      timeSavings: 15,
-      shortcuts: ["Use pre-formed patties", "Microwave + broil cooking method", "One-pan cooking for meat and vegetables", "Pre-cut vegetables"]
-    },
-    image: "/images/restaurant-dishes/cheeseburger.jpg"
-  }
-];
-
-// Props interface for the component
-interface RestaurantRecreatorProps {
-  // Add props here if needed in the future
-}
-
-const RestaurantRecreator: React.FC<RestaurantRecreatorProps> = () => {
+const RestaurantRecreator: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeTab, setActiveTab] = useState<number>(0);
   const [selectedDish, setSelectedDish] = useState<DishTransformation | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showResults, setShowResults] = useState<boolean>(false);
+  const [searchResults, setSearchResults] = useState<DishTransformation[]>([]);
+  const [popularDishes, setPopularDishes] = useState<DishTransformation[]>([]);
+  const [error, setError] = useState<string | null>(null);
   
-  // For demonstration, we'll use the sample data
-  // In a real implementation, this would call an API
-  const handleSearch = () => {
+  // Fetch popular dishes on component mount
+  useEffect(() => {
+    const fetchPopularDishes = async () => {
+      try {
+        const dishes = await restaurantService.getPopularDishes();
+        setPopularDishes(dishes);
+      } catch (err) {
+        console.error('Error fetching popular dishes:', err);
+        setError('Unable to load popular dishes. Please try again later.');
+      }
+    };
+    
+    fetchPopularDishes();
+  }, []);
+  
+  // Handle search using the API
+  const handleSearch = async () => {
     if (searchQuery.trim() === '') return;
     
     setIsLoading(true);
+    setError(null);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const results = await restaurantService.searchDishes(searchQuery);
+      setSearchResults(results);
       setShowResults(true);
+    } catch (err) {
+      console.error('Error searching dishes:', err);
+      setError('An error occurred while searching. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
   
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
   
-  const handleDishSelect = (dish: DishTransformation) => {
-    setSelectedDish(dish);
+  const handleDishSelect = async (dishId: string) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const dish = await restaurantService.getDishById(dishId);
+      if (dish) {
+        setSelectedDish(dish);
+      } else {
+        setError('Dish not found. Please try another selection.');
+      }
+    } catch (err) {
+      console.error('Error fetching dish details:', err);
+      setError('Unable to load dish details. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const handleBackToResults = () => {
     setSelectedDish(null);
+  };
+
+  const handleSaveDish = async (dishId: string) => {
+    try {
+      await restaurantService.saveDishTransformation(dishId);
+      // You could show a success message or update UI here
+    } catch (err) {
+      console.error('Error saving dish:', err);
+      setError('Unable to save dish. Please try again.');
+    }
   };
   
   return (
@@ -217,26 +153,39 @@ const RestaurantRecreator: React.FC<RestaurantRecreatorProps> = () => {
           </Grid>
         </Grid>
         
+        {error && (
+          <Typography color="error" sx={{ mt: 2 }}>
+            {error}
+          </Typography>
+        )}
+        
         <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
           <Typography variant="body2">Popular searches:</Typography>
-          <Chip 
-            label="Olive Garden Alfredo" 
-            size="small" 
-            onClick={() => setSearchQuery('Olive Garden Alfredo')}
-            clickable
-          />
-          <Chip 
-            label="Chipotle Burrito Bowl" 
-            size="small" 
-            onClick={() => setSearchQuery('Chipotle Burrito Bowl')}
-            clickable
-          />
-          <Chip 
-            label="Cheesecake Factory Pasta" 
-            size="small" 
-            onClick={() => setSearchQuery('Cheesecake Factory Pasta')}
-            clickable
-          />
+          {popularDishes.slice(0, 3).map((dish) => (
+            <Chip 
+              key={dish.id}
+              label={`${dish.restaurantName} ${dish.originalName}`}
+              size="small" 
+              onClick={() => setSearchQuery(`${dish.restaurantName} ${dish.originalName}`)}
+              clickable
+            />
+          ))}
+          {popularDishes.length === 0 && !isLoading && (
+            <>
+              <Chip 
+                label="Olive Garden Alfredo" 
+                size="small" 
+                onClick={() => setSearchQuery('Olive Garden Alfredo')}
+                clickable
+              />
+              <Chip 
+                label="Chipotle Burrito Bowl" 
+                size="small" 
+                onClick={() => setSearchQuery('Chipotle Burrito Bowl')}
+                clickable
+              />
+            </>
+          )}
         </Box>
       </Paper>
       
@@ -247,86 +196,94 @@ const RestaurantRecreator: React.FC<RestaurantRecreatorProps> = () => {
             Restaurant Dishes Found
           </Typography>
           
-          <Typography variant="body2" color="text.secondary" paragraph>
-            Select a dish to see healthier, budget-friendly, and quicker versions:
-          </Typography>
-          
-          <Grid container spacing={3}>
-            {sampleTransformations.map((dish) => (
-              <Grid item key={dish.originalName} xs={12} md={6} lg={4}>
-                <Card 
-                  sx={{ 
-                    height: '100%', 
-                    cursor: 'pointer',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    '&:hover': {
-                      transform: 'translateY(-5px)',
-                      boxShadow: 6
-                    }
-                  }}
-                  onClick={() => handleDishSelect(dish)}
-                >
-                  <CardMedia
-                    component="img"
-                    height="160"
-                    image={dish.image}
-                    alt={dish.originalName}
-                    sx={{ objectFit: 'cover' }}
-                  />
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      {dish.originalName}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      {dish.restaurantName}
-                    </Typography>
-                    
-                    <Grid container spacing={1} sx={{ mt: 1 }}>
-                      <Grid item xs={4}>
-                        <Typography variant="caption" display="block" color="text.secondary">
-                          Calories
-                        </Typography>
-                        <Typography variant="body2" fontWeight="bold">
-                          {dish.estimatedCalories}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={4}>
-                        <Typography variant="caption" display="block" color="text.secondary">
-                          Cost
-                        </Typography>
-                        <Typography variant="body2" fontWeight="bold">
-                          ${dish.estimatedCost.toFixed(2)}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={4}>
-                        <Typography variant="caption" display="block" color="text.secondary">
-                          Time
-                        </Typography>
-                        <Typography variant="body2" fontWeight="bold">
-                          {dish.prepTime + dish.cookTime} min
-                        </Typography>
-                      </Grid>
-                    </Grid>
-                    
-                    <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
-                      <Chip 
-                        icon={<FitnessCenter fontSize="small" />} 
-                        label={`-${Math.round((dish.estimatedCalories - dish.healthierVersion.calories) / dish.estimatedCalories * 100)}% cal`}
-                        size="small"
-                        color="success"
+          {searchResults.length === 0 ? (
+            <Typography variant="body1">
+              No dishes found matching your search. Please try another query.
+            </Typography>
+          ) : (
+            <>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                Select a dish to see healthier, budget-friendly, and quicker versions:
+              </Typography>
+              
+              <Grid container spacing={3}>
+                {searchResults.map((dish) => (
+                  <Grid item key={dish.id} xs={12} md={6} lg={4}>
+                    <Card 
+                      sx={{ 
+                        height: '100%', 
+                        cursor: 'pointer',
+                        transition: 'transform 0.2s, box-shadow 0.2s',
+                        '&:hover': {
+                          transform: 'translateY(-5px)',
+                          boxShadow: 6
+                        }
+                      }}
+                      onClick={() => handleDishSelect(dish.id)}
+                    >
+                      <CardMedia
+                        component="img"
+                        height="160"
+                        image={dish.image}
+                        alt={dish.originalName}
+                        sx={{ objectFit: 'cover' }}
                       />
-                      <Chip 
-                        icon={<MonetizationOn fontSize="small" />} 
-                        label={`Save $${dish.budgetVersion.costSavings.toFixed(0)}`}
-                        size="small"
-                        color="primary"
-                      />
-                    </Box>
-                  </CardContent>
-                </Card>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                          {dish.originalName}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          {dish.restaurantName}
+                        </Typography>
+                        
+                        <Grid container spacing={1} sx={{ mt: 1 }}>
+                          <Grid item xs={4}>
+                            <Typography variant="caption" display="block" color="text.secondary">
+                              Calories
+                            </Typography>
+                            <Typography variant="body2" fontWeight="bold">
+                              {dish.estimatedCalories}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={4}>
+                            <Typography variant="caption" display="block" color="text.secondary">
+                              Cost
+                            </Typography>
+                            <Typography variant="body2" fontWeight="bold">
+                              ${dish.estimatedCost.toFixed(2)}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={4}>
+                            <Typography variant="caption" display="block" color="text.secondary">
+                              Time
+                            </Typography>
+                            <Typography variant="body2" fontWeight="bold">
+                              {dish.prepTime + dish.cookTime} min
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                        
+                        <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                          <Chip 
+                            icon={<FitnessCenter fontSize="small" />} 
+                            label={`-${Math.round((dish.estimatedCalories - dish.healthierVersion.calories) / dish.estimatedCalories * 100)}% cal`}
+                            size="small"
+                            color="success"
+                          />
+                          <Chip 
+                            icon={<MonetizationOn fontSize="small" />} 
+                            label={`Save $${dish.budgetVersion.costSavings.toFixed(0)}`}
+                            size="small"
+                            color="primary"
+                          />
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
               </Grid>
-            ))}
-          </Grid>
+            </>
+          )}
         </Box>
       )}
       
@@ -488,6 +445,7 @@ const RestaurantRecreator: React.FC<RestaurantRecreatorProps> = () => {
                     color="success"
                     startIcon={<LocalDining />}
                     size="large"
+                    onClick={() => handleSaveDish(selectedDish.id)}
                   >
                     Get Full Healthy Recipe
                   </Button>
@@ -546,6 +504,7 @@ const RestaurantRecreator: React.FC<RestaurantRecreatorProps> = () => {
                     color="primary"
                     startIcon={<ShoppingCart />}
                     size="large"
+                    onClick={() => handleSaveDish(selectedDish.id)}
                   >
                     Get Budget Recipe & Shopping List
                   </Button>
@@ -598,6 +557,7 @@ const RestaurantRecreator: React.FC<RestaurantRecreatorProps> = () => {
                     color="info"
                     startIcon={<Timer />}
                     size="large"
+                    onClick={() => handleSaveDish(selectedDish.id)}
                   >
                     Get Quick Recipe
                   </Button>

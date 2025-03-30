@@ -36,6 +36,9 @@ import { DishTransformation } from '../../types/restaurant';
 import { restaurantService } from '../../services/restaurantService';
 import { fallbackDishes } from '../../services/fallbackService';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_DATA !== 'false';
+
 const RestaurantRecreator: React.FC = () => {
   // Log fallback dishes on component initialization to check if they're available
   console.log('RestaurantRecreator init - Available fallback dishes:', fallbackDishes);
@@ -220,6 +223,13 @@ const RestaurantRecreator: React.FC = () => {
         </Typography>
         <Typography variant="body1" sx={{ mb: 3 }}>
           Enter a restaurant dish you&apos;d like to recreate at home with healthier ingredients, lower cost, or faster preparation.
+        </Typography>
+        
+        <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 2 }}>
+          {USE_MOCK_DATA 
+            ? "Using sample data (mock mode)" 
+            : `Connected to API: ${API_URL}`
+          }
         </Typography>
         
         <Grid container spacing={2} alignItems="center">

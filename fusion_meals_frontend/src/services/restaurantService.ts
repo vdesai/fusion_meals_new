@@ -2,12 +2,14 @@ import axios from 'axios';
 import { DishTransformation } from '../types/restaurant';
 import { fallbackService } from './fallbackService';
 
-// Base API URL - should be configurable via environment variables
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fusionmeals.com';
+// Base API URL - configurable via environment variables
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+// Flag to control whether mock data should be used as fallback
+const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_DATA !== 'false';
 
 /**
  * Service to handle all restaurant-related API calls
- * Uses fallback data when API calls fail
  */
 export const restaurantService = {
   /**
@@ -16,41 +18,47 @@ export const restaurantService = {
    * @returns Promise with search results
    */
   searchDishes: async (query: string): Promise<DishTransformation[]> => {
-    // Always log the query
     console.log('restaurantService.searchDishes called with query:', query);
+    console.log('Using API URL:', API_URL);
+    console.log('Mock data fallback enabled:', USE_MOCK_DATA);
     
     try {
-      // Always try fallback first in development
-      if (API_URL === 'https://api.fusionmeals.com' || process.env.NODE_ENV === 'development') {
-        console.log('Using fallback data directly (default API URL or development mode)');
+      // If mock data is explicitly enabled and we have a default API URL, use mock data
+      if (USE_MOCK_DATA && (!API_URL || API_URL === 'https://api.fusionmeals.com')) {
+        console.log('Using mock data as configured');
         return fallbackService.searchDishes(query);
       }
       
-      // Only try the real API if we're not in development and have a non-default API URL
-      console.log('Attempting to call real API at:', `${API_URL}/api/restaurant-dishes/search`);
+      // Make the actual API call
+      console.log('Calling real API endpoint:', `${API_URL}/api/restaurant-dishes/search`);
       const response = await axios.get(`${API_URL}/api/restaurant-dishes/search`, {
         params: { query },
-        timeout: 5000 // 5 second timeout to prevent long waits
+        timeout: 10000
       });
       
+      console.log('API response:', response.data);
+      
       if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-        console.log('API returned valid data:', response.data.length, 'results');
         return response.data;
-      } else {
-        console.log('API returned empty or invalid results, using fallback data');
+      } else if (USE_MOCK_DATA) {
+        // Only use fallback if explicitly allowed
+        console.log('API returned empty results and fallbacks are enabled');
         return fallbackService.searchDishes(query);
+      } else {
+        // If mock data is disabled, return empty array when API returns nothing
+        console.log('API returned empty results and fallbacks are disabled');
+        return [];
       }
     } catch (error) {
       console.error('Error searching restaurant dishes:', error);
-      console.log('Using fallback data due to error');
       
-      // Try-catch here to make absolutely sure we return something
-      try {
+      if (USE_MOCK_DATA) {
+        // Only use fallback if explicitly allowed
+        console.log('Using mock data as fallback due to API error');
         return fallbackService.searchDishes(query);
-      } catch (fallbackError) {
-        console.error('Even fallback service failed:', fallbackError);
-        
-        // Last resort - return an empty array
+      } else {
+        // If mock data is disabled, throw the error or return empty array
+        console.log('Fallbacks disabled, returning empty array');
         return [];
       }
     }
@@ -67,9 +75,14 @@ export const restaurantService = {
       return response.data;
     } catch (error) {
       console.error('Error fetching dish details:', error);
-      console.log('Using fallback data for dish details');
-      // Use fallback data when API is unavailable
-      return fallbackService.getDishById(id);
+      
+      if (USE_MOCK_DATA) {
+        console.log('Using mock data as fallback for dish details');
+        return fallbackService.getDishById(id);
+      } else {
+        console.log('Fallbacks disabled, returning null');
+        return null;
+      }
     }
   },
 
@@ -83,9 +96,14 @@ export const restaurantService = {
       return response.data;
     } catch (error) {
       console.error('Error fetching popular dishes:', error);
-      console.log('Using fallback data for popular dishes');
-      // Use fallback data when API is unavailable
-      return fallbackService.getPopularDishes();
+      
+      if (USE_MOCK_DATA) {
+        console.log('Using mock data as fallback for popular dishes');
+        return fallbackService.getPopularDishes();
+      } else {
+        console.log('Fallbacks disabled, returning empty array');
+        return [];
+      }
     }
   },
 
@@ -99,7 +117,6 @@ export const restaurantService = {
       return response.data;
     } catch (error) {
       console.error('Error fetching saved transformations:', error);
-      // Return empty array when API is unavailable - no fallbacks for user data
       return [];
     }
   },
@@ -115,8 +132,7 @@ export const restaurantService = {
       return response.data;
     } catch (error) {
       console.error('Error saving transformation:', error);
-      // Simulate successful save when API is unavailable
-      return { success: true };
+      return { success: false };
     }
   }
 };

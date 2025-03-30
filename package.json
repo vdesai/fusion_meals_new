@@ -2,5 +2,11 @@
   "dependencies": {
     "@prisma/client": "^6.5.0",
     "stripe": "^17.7.0"
+  },
+  "scripts": {
+    "start": "npm-run-all --parallel start:frontend start:backend",
+    "start:frontend": "cd fusion_meals_frontend && npm run dev",
+    "start:backend": "cd fusion_meals_backend && npm run dev",
+    "install:all": "npm install && cd fusion_meals_frontend && npm install && cd ../fusion_meals_backend && npm install"
   }
 }

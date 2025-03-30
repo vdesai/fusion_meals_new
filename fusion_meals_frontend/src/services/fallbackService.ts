@@ -114,6 +114,80 @@ export const fallbackDishes: DishTransformation[] = [
       shortcuts: ["Use thin-sliced chicken breast", "Use jar sauce with added seasonings", "Microwave-ready pasta", "Broil instead of bake for final cheese melt"]
     },
     image: "/images/restaurant-dishes/chicken-parmesan.jpg"
+  },
+  {
+    id: "1004",
+    originalName: "Paneer Tikka Masala",
+    restaurantName: "Indian Spice Palace",
+    estimatedCalories: 950,
+    estimatedCost: 16.99,
+    prepTime: 20,
+    cookTime: 25,
+    healthierVersion: {
+      name: "Lighter Paneer Tikka",
+      description: "A lighter version with reduced cream, more vegetables and baked paneer instead of fried.",
+      calories: 550,
+      costSavings: 9.50,
+      healthBenefits: ["42% fewer calories", "Lower fat content", "More vegetable variety", "Added fiber"],
+      mainSubstitutions: [
+        {original: "Heavy cream", healthier: "Yogurt and light coconut milk"},
+        {original: "Fried paneer", healthier: "Baked paneer cubes"},
+        {original: "Extra oil", healthier: "Less oil with non-stick pan"},
+        {original: "White rice", healthier: "Brown rice or cauliflower rice"}
+      ]
+    },
+    budgetVersion: {
+      name: "Budget-Friendly Paneer Curry",
+      description: "Make this restaurant favorite at home for a fraction of the cost.",
+      costSavings: 11.50,
+      totalCost: 5.49,
+      valueIngredients: ["Make your own paneer from milk", "Use frozen mixed vegetables", "Make your own spice blend", "Use canned tomatoes instead of fresh"]
+    },
+    quickVersion: {
+      name: "30-Minute Paneer Curry",
+      description: "A simplified version that preserves authentic flavor but cuts prep time.",
+      totalTime: 30,
+      timeSavings: 15,
+      shortcuts: ["Use pre-cut paneer", "Use pre-mixed garam masala", "Use tomato paste instead of reducing fresh tomatoes", "Cook in pressure cooker or Instant Pot"]
+    },
+    image: "/images/restaurant-dishes/paneer-tikka.jpg"
+  },
+  {
+    id: "1005",
+    originalName: "Butter Chicken",
+    restaurantName: "Taj Indian Restaurant",
+    estimatedCalories: 1100,
+    estimatedCost: 18.99,
+    prepTime: 25,
+    cookTime: 30,
+    healthierVersion: {
+      name: "Lightened Butter Chicken",
+      description: "All the rich flavor with less fat and calories using yogurt and reducing cream.",
+      calories: 650,
+      costSavings: 11.00,
+      healthBenefits: ["40% fewer calories", "Much less saturated fat", "Higher protein content", "Less sodium"],
+      mainSubstitutions: [
+        {original: "Butter and cream", healthier: "Greek yogurt and a touch of light cream"},
+        {original: "Skin-on chicken", healthier: "Skinless chicken breast"},
+        {original: "Extra ghee", healthier: "Measured amount of olive oil"},
+        {original: "White naan", healthier: "Whole grain chapati"}
+      ]
+    },
+    budgetVersion: {
+      name: "Economical Butter Chicken",
+      description: "Restaurant-quality butter chicken at a fraction of the price.",
+      costSavings: 12.50,
+      totalCost: 6.49,
+      valueIngredients: ["Use chicken thighs instead of breast", "Make your own garam masala", "Use canned tomatoes", "Freeze leftover portions"]
+    },
+    quickVersion: {
+      name: "Express Butter Chicken",
+      description: "A simplified version ready in half the time.",
+      totalTime: 25,
+      timeSavings: 30,
+      shortcuts: ["Use rotisserie chicken", "Use prepared ginger-garlic paste", "Use pre-made spice mix", "Simmer in pressure cooker"]
+    },
+    image: "/images/restaurant-dishes/butter-chicken.jpg"
   }
 ];
 

@@ -34,8 +34,12 @@ import {
 } from '@mui/icons-material';
 import { DishTransformation } from '../../types/restaurant';
 import { restaurantService } from '../../services/restaurantService';
+import { fallbackDishes } from '../../services/fallbackService';
 
 const RestaurantRecreator: React.FC = () => {
+  // Log fallback dishes on component initialization to check if they're available
+  console.log('RestaurantRecreator init - Available fallback dishes:', fallbackDishes);
+  
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeTab, setActiveTab] = useState<number>(0);
   const [selectedDish, setSelectedDish] = useState<DishTransformation | null>(null);
@@ -71,34 +75,80 @@ const RestaurantRecreator: React.FC = () => {
     
     try {
       console.log('Searching for:', searchQuery);
+      
+      // Debug - Directly try fallback data first to see what's available
+      console.log('DEBUG: Attempting to fetch all fallback dishes');
+      const allFallbackDishes = await restaurantService.searchDishes('');
+      console.log('DEBUG: All available fallback dishes:', allFallbackDishes);
+      
+      if (!allFallbackDishes || allFallbackDishes.length === 0) {
+        console.error('DEBUG: No fallback dishes available!');
+        setError('No sample dishes available. Please check the console for errors.');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Now do the actual search
       const results = await restaurantService.searchDishes(searchQuery);
-      console.log('Search results:', results);
+      console.log('Search results from API:', results);
       
       if (results && results.length > 0) {
         setSearchResults(results);
         setShowResults(true);
       } else {
-        // If no results, try a more permissive search by splitting the query
-        // This helps when someone searches for "Olive Garden Alfredo" but the name is split between restaurant and dish name
+        // If no results, try a more permissive search by splitting the query manually
+        console.log('No direct results, trying with individual terms');
+        
         const terms = searchQuery.toLowerCase().split(' ');
-        console.log('No direct results, trying with individual terms:', terms);
+        console.log('Search terms:', terms);
         
-        // Call the fallback directly to avoid another API call that will fail
-        const fallbackResults = await restaurantService.searchDishes('');
-        
-        // Filter fallback results using individual terms
-        const filteredResults = fallbackResults.filter(dish => {
+        // Manually filter the fallback dishes
+        const filteredResults = allFallbackDishes.filter(dish => {
           const dishFullText = `${dish.restaurantName} ${dish.originalName}`.toLowerCase();
-          return terms.some(term => dishFullText.includes(term));
+          console.log(`Checking "${dishFullText}" against search terms`);
+          return terms.some(term => {
+            const match = term.length > 2 && dishFullText.includes(term);
+            if (match) console.log(`Match found for term: "${term}" in dish: "${dishFullText}"`);
+            return match;
+          });
         });
         
-        console.log('Fallback results with individual terms:', filteredResults);
-        setSearchResults(filteredResults);
+        console.log('Manually filtered results:', filteredResults);
+        
+        // If still no results, just show all dishes
+        if (filteredResults.length === 0) {
+          console.log('No matches found, showing all dishes instead');
+          setSearchResults(allFallbackDishes);
+        } else {
+          setSearchResults(filteredResults);
+        }
+        
         setShowResults(true);
       }
     } catch (err) {
       console.error('Error searching dishes:', err);
-      setError('An error occurred while searching. Please try again.');
+      setError('An error occurred while searching. Using sample data instead.');
+      
+      // Try to get fallback dishes from the service
+      try {
+        const fallbackDishesFromService = await restaurantService.searchDishes('');
+        console.log('Fallback dishes in error handler:', fallbackDishesFromService);
+        
+        if (fallbackDishesFromService && fallbackDishesFromService.length > 0) {
+          setSearchResults(fallbackDishesFromService);
+        } else {
+          // Last resort - use directly imported fallback dishes
+          console.log('Using directly imported fallback dishes as last resort');
+          setSearchResults(fallbackDishes);
+        }
+      } catch (fallbackErr) {
+        // Ultimate fallback - use the directly imported fallback dishes
+        console.error('Failed to get even fallback dishes from service:', fallbackErr);
+        console.log('Using directly imported fallback dishes as final resort');
+        setSearchResults(fallbackDishes);
+      }
+      
+      setShowResults(true);
     } finally {
       setIsLoading(false);
     }

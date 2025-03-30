@@ -16,28 +16,43 @@ export const restaurantService = {
    * @returns Promise with search results
    */
   searchDishes: async (query: string): Promise<DishTransformation[]> => {
+    // Always log the query
+    console.log('restaurantService.searchDishes called with query:', query);
+    
     try {
-      // If API_URL is the default, just use fallback immediately
-      if (API_URL === 'https://api.fusionmeals.com') {
-        console.log('Using default API URL, returning fallback data directly');
+      // Always try fallback first in development
+      if (API_URL === 'https://api.fusionmeals.com' || process.env.NODE_ENV === 'development') {
+        console.log('Using fallback data directly (default API URL or development mode)');
         return fallbackService.searchDishes(query);
       }
       
+      // Only try the real API if we're not in development and have a non-default API URL
+      console.log('Attempting to call real API at:', `${API_URL}/api/restaurant-dishes/search`);
       const response = await axios.get(`${API_URL}/api/restaurant-dishes/search`, {
-        params: { query }
+        params: { query },
+        timeout: 5000 // 5 second timeout to prevent long waits
       });
       
       if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        console.log('API returned valid data:', response.data.length, 'results');
         return response.data;
       } else {
-        console.log('API returned empty results, using fallback data');
+        console.log('API returned empty or invalid results, using fallback data');
         return fallbackService.searchDishes(query);
       }
     } catch (error) {
       console.error('Error searching restaurant dishes:', error);
-      console.log('Using fallback data for search');
-      // Use fallback data when API is unavailable
-      return fallbackService.searchDishes(query);
+      console.log('Using fallback data due to error');
+      
+      // Try-catch here to make absolutely sure we return something
+      try {
+        return fallbackService.searchDishes(query);
+      } catch (fallbackError) {
+        console.error('Even fallback service failed:', fallbackError);
+        
+        // Last resort - return an empty array
+        return [];
+      }
     }
   },
 

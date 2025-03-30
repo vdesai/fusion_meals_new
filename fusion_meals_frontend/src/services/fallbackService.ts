@@ -125,29 +125,98 @@ export const fallbackService = {
    * Filter dishes based on query to simulate search
    */
   searchDishes: (query: string): DishTransformation[] => {
-    // If query is empty, return all dishes (used for fallback searching)
+    console.log('Fallback service searchDishes called with query:', query);
+    
+    // Always log the available dishes to debug
+    console.log('Available fallback dishes:', fallbackDishes);
+    
+    // Safety check - if dishes array is empty or undefined
+    if (!fallbackDishes || !Array.isArray(fallbackDishes) || fallbackDishes.length === 0) {
+      console.error('Fallback dishes array is empty or invalid!');
+      
+      // Return hardcoded default dish if the array is somehow empty
+      return [{
+        id: "default-1001",
+        originalName: "Default Fettuccine Alfredo",
+        restaurantName: "Default Restaurant",
+        estimatedCalories: 1200,
+        estimatedCost: 18.99,
+        prepTime: 20,
+        cookTime: 15,
+        healthierVersion: {
+          name: "Healthier Default Dish",
+          description: "A lighter version of the default dish.",
+          calories: 450,
+          costSavings: 12.50,
+          healthBenefits: ["Fewer calories", "Better nutrition"],
+          mainSubstitutions: [
+            {original: "Unhealthy ingredient", healthier: "Healthy ingredient"}
+          ]
+        },
+        budgetVersion: {
+          name: "Budget Default Dish",
+          description: "A cheaper version of the default dish.",
+          costSavings: 15.00,
+          totalCost: 3.99,
+          valueIngredients: ["Cheaper ingredient 1", "Cheaper ingredient 2"]
+        },
+        quickVersion: {
+          name: "Quick Default Dish",
+          description: "A faster version of the default dish.",
+          totalTime: 15,
+          timeSavings: 20,
+          shortcuts: ["Quick trick 1", "Quick trick 2"]
+        },
+        image: "/images/restaurant-dishes/default-dish.jpg"
+      }];
+    }
+    
+    // If query is empty, return all dishes
     if (!query || query.trim() === '') {
+      console.log('Empty query, returning all fallback dishes');
       return fallbackDishes;
     }
     
     const lowercaseQuery = query.toLowerCase();
-    return fallbackDishes.filter(dish => 
+    const results = fallbackDishes.filter(dish => 
       dish.originalName.toLowerCase().includes(lowercaseQuery) || 
       dish.restaurantName.toLowerCase().includes(lowercaseQuery)
     );
+    
+    console.log(`Fallback search for "${query}" returned ${results.length} results`);
+    return results;
   },
   
   /**
    * Find a dish by ID from the fallback data
    */
   getDishById: (id: string): DishTransformation | null => {
-    return fallbackDishes.find(dish => dish.id === id) || null;
+    console.log('Fallback service getDishById called with id:', id);
+    
+    // Safety check
+    if (!fallbackDishes || !Array.isArray(fallbackDishes) || fallbackDishes.length === 0) {
+      console.error('Fallback dishes array is empty or invalid in getDishById!');
+      return null;
+    }
+    
+    const dish = fallbackDishes.find(dish => dish.id === id);
+    console.log('Found dish by ID:', dish);
+    return dish || null;
   },
   
   /**
    * Return all fallback dishes as popular dishes
    */
   getPopularDishes: (): DishTransformation[] => {
+    console.log('Fallback service getPopularDishes called');
+    
+    // Safety check
+    if (!fallbackDishes || !Array.isArray(fallbackDishes) || fallbackDishes.length === 0) {
+      console.error('Fallback dishes array is empty or invalid in getPopularDishes!');
+      return [];
+    }
+    
+    console.log('Returning all fallback dishes as popular dishes');
     return fallbackDishes;
   }
 };

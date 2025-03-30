@@ -18,7 +18,9 @@ import {
   ListItemIcon,
   ListItemText,
   CircularProgress,
-  Paper
+  Paper,
+  Divider,
+  CardActionArea
 } from '@mui/material';
 import { 
   Search,
@@ -30,11 +32,21 @@ import {
   ShoppingCart,
   Check,
   TrendingDown,
-  LocalDining
+  LocalDining,
+  Info,
+  LocalFireDepartment,
+  AttachMoney,
+  QueryBuilder,
+  HealthAndSafety,
+  Savings,
+  Speed,
+  Construction,
+  NewReleases
 } from '@mui/icons-material';
 import { DishTransformation } from '../../types/restaurant';
 import { restaurantService } from '../../services/restaurantService';
 import { fallbackDishes } from '../../services/fallbackService';
+import SearchIcon from '@mui/icons-material/Search';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://fusion-meals-new.onrender.com';
 const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_DATA !== 'false';
@@ -216,6 +228,31 @@ const RestaurantRecreator: React.FC = () => {
   
   return (
     <Box>
+      {/* Beta Banner - Add this at the top */}
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 2, 
+          mb: 3, 
+          background: 'linear-gradient(90deg, #654ea3 0%, #eaafc8 100%)', 
+          color: 'white',
+          borderRadius: 2,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2
+        }}
+      >
+        <NewReleases fontSize="large" />
+        <Box>
+          <Typography variant="h6" fontWeight="bold">
+            Beta Feature
+          </Typography>
+          <Typography variant="body2">
+            The Restaurant-to-Home Recreator is currently in beta. We're enhancing it with more dishes and improved features. Your feedback is valuable as we continue development!
+          </Typography>
+        </Box>
+      </Paper>
+
       {/* Search Section */}
       <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 2 }}>
         <Typography variant="h5" gutterBottom>
@@ -302,9 +339,22 @@ const RestaurantRecreator: React.FC = () => {
       
       {/* Results Display */}
       {showResults && !selectedDish && (
-        <Box>
-          <Typography variant="h5" gutterBottom>
-            Restaurant Dishes Found
+        <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
+          {/* Add a Beta Chip next to the results title */}
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h5" sx={{ mr: 2 }}>
+              Restaurant Dishes Found
+            </Typography>
+            <Chip 
+              icon={<Construction />} 
+              label="Beta" 
+              color="secondary" 
+              size="small"
+            />
+          </Box>
+          
+          <Typography variant="body1" gutterBottom>
+            Select a dish to see healthier, budget-friendly, and quicker versions:
           </Typography>
           
           {searchResults.length === 0 ? (
@@ -313,10 +363,6 @@ const RestaurantRecreator: React.FC = () => {
             </Typography>
           ) : (
             <>
-              <Typography variant="body2" color="text.secondary" paragraph>
-                Select a dish to see healthier, budget-friendly, and quicker versions:
-              </Typography>
-              
               <Grid container spacing={3}>
                 {searchResults.map((dish) => (
                   <Grid item key={dish.id} xs={12} md={6} lg={4}>
@@ -399,12 +445,25 @@ const RestaurantRecreator: React.FC = () => {
               </Grid>
             </>
           )}
-        </Box>
+        </Paper>
       )}
       
       {/* Detailed Dish View */}
       {selectedDish && (
-        <Box>
+        <Paper elevation={3} sx={{ p: 4, mt: 4, borderRadius: 2 }}>
+          {/* Add a Beta Chip next to the dish name */}
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h4" sx={{ mr: 2 }}>
+              {selectedDish.originalName}
+            </Typography>
+            <Chip 
+              icon={<Construction />} 
+              label="Preview" 
+              color="secondary" 
+              size="small"
+            />
+          </Box>
+          
           <Button 
             variant="text" 
             startIcon={<Restaurant />}
@@ -681,7 +740,29 @@ const RestaurantRecreator: React.FC = () => {
               </Box>
             )}
           </Box>
-        </Box>
+        </Paper>
+      )}
+      
+      {/* Add a note about more dishes coming soon at the bottom if showing results */}
+      {showResults && !isLoading && searchResults.length > 0 && (
+        <Paper 
+          elevation={1} 
+          sx={{ 
+            p: 3, 
+            mt: 4, 
+            borderRadius: 2, 
+            bgcolor: '#f5f5f5', 
+            border: '1px dashed #ccc',
+            textAlign: 'center'
+          }}
+        >
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            More Restaurant Dishes Coming Soon!
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            We&apos;re constantly adding new restaurant favorites to our database. Check back regularly for new dishes to recreate at home!
+          </Typography>
+        </Paper>
       )}
     </Box>
   );

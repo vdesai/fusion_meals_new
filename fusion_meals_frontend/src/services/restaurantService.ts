@@ -3,7 +3,7 @@ import { DishTransformation } from '../types/restaurant';
 import { fallbackService } from './fallbackService';
 
 // Base API URL - configurable via environment variables
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://fusion-meals-new.onrender.com';
 
 // Flag to control whether mock data should be used as fallback
 const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_DATA !== 'false';
@@ -27,6 +27,14 @@ export const restaurantService = {
       if (USE_MOCK_DATA && (!API_URL || API_URL === 'https://api.fusionmeals.com')) {
         console.log('Using mock data as configured');
         return fallbackService.searchDishes(query);
+      }
+      
+      // Check if API is available first to handle Render cold starts
+      try {
+        const healthResponse = await axios.get(`${API_URL}`, { timeout: 5000 });
+        console.log('API health check:', healthResponse.data);
+      } catch (healthError) {
+        console.warn('API health check failed, proceeding anyway:', healthError);
       }
       
       // Make the actual API call

@@ -27,9 +27,11 @@ This guide helps you set up and run a real backend API for your Fusion Meals app
 
    Update the `.env.local` file in the `fusion_meals_frontend` directory:
    ```
-   NEXT_PUBLIC_API_URL=http://localhost:8000
+   NEXT_PUBLIC_API_URL=https://fusion-meals-new.onrender.com
    NEXT_PUBLIC_USE_MOCK_DATA=false
    ```
+
+   > **Note**: For production deployments, you should set these environment variables in your hosting platform's dashboard (e.g., Vercel) rather than committing them to the repository.
 
 4. **Start the Frontend**
 
@@ -67,11 +69,20 @@ You can customize the backend by:
   - No firewall is blocking the connection
   - CORS is properly configured (should be fine by default)
 
-## Using in Production
+## Production Backend
 
-For production use:
+The production backend is hosted at [https://fusion-meals-new.onrender.com](https://fusion-meals-new.onrender.com) with the following endpoints:
 
-1. Deploy the backend to a server (Heroku, AWS, etc.)
-2. Update the frontend environment variable to point to your deployed backend
-3. Replace the JSON file storage with a proper database
-4. Implement user authentication and authorization 
+- `/recipes`
+- `/meal-plans`
+- `/grocery`
+- `/email`
+- `/ingredient-substitution`
+- `/recipe-scaling`
+- `/recipe-analysis`
+- `/recipe-sharing`
+- `/ai-chef`
+- `/global-cuisine`
+- `/meal-prep`
+
+To verify the backend is running, you can visit the root URL which should return a status message 

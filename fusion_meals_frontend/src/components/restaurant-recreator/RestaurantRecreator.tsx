@@ -44,12 +44,14 @@ const RestaurantRecreator: React.FC = () => {
   const [searchResults, setSearchResults] = useState<DishTransformation[]>([]);
   const [popularDishes, setPopularDishes] = useState<DishTransformation[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   // Fetch popular dishes on component mount
   useEffect(() => {
     const fetchPopularDishes = async () => {
       try {
         const dishes = await restaurantService.getPopularDishes();
+        console.log('Fetched popular dishes:', dishes);
         setPopularDishes(dishes);
       } catch (err) {
         console.error('Error fetching popular dishes:', err);
@@ -68,9 +70,32 @@ const RestaurantRecreator: React.FC = () => {
     setError(null);
     
     try {
+      console.log('Searching for:', searchQuery);
       const results = await restaurantService.searchDishes(searchQuery);
-      setSearchResults(results);
-      setShowResults(true);
+      console.log('Search results:', results);
+      
+      if (results && results.length > 0) {
+        setSearchResults(results);
+        setShowResults(true);
+      } else {
+        // If no results, try a more permissive search by splitting the query
+        // This helps when someone searches for "Olive Garden Alfredo" but the name is split between restaurant and dish name
+        const terms = searchQuery.toLowerCase().split(' ');
+        console.log('No direct results, trying with individual terms:', terms);
+        
+        // Call the fallback directly to avoid another API call that will fail
+        const fallbackResults = await restaurantService.searchDishes('');
+        
+        // Filter fallback results using individual terms
+        const filteredResults = fallbackResults.filter(dish => {
+          const dishFullText = `${dish.restaurantName} ${dish.originalName}`.toLowerCase();
+          return terms.some(term => dishFullText.includes(term));
+        });
+        
+        console.log('Fallback results with individual terms:', filteredResults);
+        setSearchResults(filteredResults);
+        setShowResults(true);
+      }
     } catch (err) {
       console.error('Error searching dishes:', err);
       setError('An error occurred while searching. Please try again.');
@@ -108,12 +133,32 @@ const RestaurantRecreator: React.FC = () => {
 
   const handleSaveDish = async (dishId: string) => {
     try {
+      setSuccessMessage(null);
+      setError(null);
+      
       await restaurantService.saveDishTransformation(dishId);
-      // You could show a success message or update UI here
+      setSuccessMessage('Recipe saved successfully! You can access it from your profile.');
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
     } catch (err) {
       console.error('Error saving dish:', err);
       setError('Unable to save dish. Please try again.');
     }
+  };
+  
+  const getImageUrl = (path: string) => {
+    // Default image to use if the requested image is not found
+    const defaultImage = '/images/restaurant-dishes/default-dish.jpg';
+    
+    // Check if path is valid
+    if (!path || path.trim() === '') {
+      return defaultImage;
+    }
+    
+    return path;
   };
   
   return (
@@ -156,6 +201,12 @@ const RestaurantRecreator: React.FC = () => {
         {error && (
           <Typography color="error" sx={{ mt: 2 }}>
             {error}
+          </Typography>
+        )}
+        
+        {successMessage && (
+          <Typography color="success.main" sx={{ mt: 2 }}>
+            {successMessage}
           </Typography>
         )}
         
@@ -224,9 +275,13 @@ const RestaurantRecreator: React.FC = () => {
                       <CardMedia
                         component="img"
                         height="160"
-                        image={dish.image}
+                        image={getImageUrl(dish.image)}
                         alt={dish.originalName}
                         sx={{ objectFit: 'cover' }}
+                        onError={(e) => {
+                          // If image fails to load, replace with default
+                          (e.target as HTMLImageElement).src = '/images/restaurant-dishes/default-dish.jpg';
+                        }}
                       />
                       <CardContent>
                         <Typography variant="h6" gutterBottom>
@@ -306,9 +361,10 @@ const RestaurantRecreator: React.FC = () => {
                   sx={{
                     height: { xs: 200, md: '100%' },
                     position: 'relative',
-                    backgroundImage: `url(${selectedDish.image})`,
+                    backgroundImage: `url(${getImageUrl(selectedDish.image)})`,
                     backgroundSize: 'cover',
-                    backgroundPosition: 'center'
+                    backgroundPosition: 'center',
+                    backgroundColor: 'grey.300', // Add background color as fallback
                   }}
                 >
                   <Box sx={{ 

@@ -17,10 +17,22 @@ export const restaurantService = {
    */
   searchDishes: async (query: string): Promise<DishTransformation[]> => {
     try {
+      // If API_URL is the default, just use fallback immediately
+      if (API_URL === 'https://api.fusionmeals.com') {
+        console.log('Using default API URL, returning fallback data directly');
+        return fallbackService.searchDishes(query);
+      }
+      
       const response = await axios.get(`${API_URL}/api/restaurant-dishes/search`, {
         params: { query }
       });
-      return response.data;
+      
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        return response.data;
+      } else {
+        console.log('API returned empty results, using fallback data');
+        return fallbackService.searchDishes(query);
+      }
     } catch (error) {
       console.error('Error searching restaurant dishes:', error);
       console.log('Using fallback data for search');

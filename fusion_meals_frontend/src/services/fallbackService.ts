@@ -125,6 +125,11 @@ export const fallbackService = {
    * Filter dishes based on query to simulate search
    */
   searchDishes: (query: string): DishTransformation[] => {
+    // If query is empty, return all dishes (used for fallback searching)
+    if (!query || query.trim() === '') {
+      return fallbackDishes;
+    }
+    
     const lowercaseQuery = query.toLowerCase();
     return fallbackDishes.filter(dish => 
       dish.originalName.toLowerCase().includes(lowercaseQuery) || 

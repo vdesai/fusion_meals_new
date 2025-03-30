@@ -35,19 +35,9 @@ import {
 import { DishTransformation } from '../../types/restaurant';
 import { restaurantService } from '../../services/restaurantService';
 import { fallbackDishes } from '../../services/fallbackService';
-import axios from 'axios';
-import { fallbackService } from '../../services/fallbackService';
-import restaurantBackendHelper from '../../services/restaurantBackendHelper';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://fusion-meals-new.onrender.com';
 const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_DATA !== 'false';
-
-// Add debug info
-console.log('=== RESTAURANT RECREATOR INITIALIZED ===');
-console.log('API_URL from environment:', process.env.NEXT_PUBLIC_API_URL);
-console.log('Effective API_URL:', API_URL);
-console.log('USE_MOCK_DATA from environment:', process.env.NEXT_PUBLIC_USE_MOCK_DATA);
-console.log('Effective USE_MOCK_DATA:', USE_MOCK_DATA);
 
 const RestaurantRecreator: React.FC = () => {
   // Log fallback dishes on component initialization to check if they're available
@@ -62,8 +52,6 @@ const RestaurantRecreator: React.FC = () => {
   const [popularDishes, setPopularDishes] = useState<DishTransformation[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState<boolean>(false);
   
   // Fetch popular dishes on component mount
   useEffect(() => {
@@ -226,72 +214,6 @@ const RestaurantRecreator: React.FC = () => {
     return path;
   };
   
-  // Add diagnostic function
-  const runDiagnostics = async () => {
-    setDebugInfo("Running diagnostics...");
-    try {
-      // First check the API root
-      try {
-        const rootResponse = await axios.get(API_URL, { timeout: 5000 });
-        setDebugInfo(prev => `${prev}\n✅ API Root: Connected successfully\nResponse: ${JSON.stringify(rootResponse.data)}`);
-        
-        // Check if we have the recipes endpoint
-        const endpoints = rootResponse.data?.available_endpoints || [];
-        if (endpoints.includes('/recipes')) {
-          setDebugInfo(prev => `${prev}\n✅ '/recipes' endpoint: Available`);
-        } else {
-          setDebugInfo(prev => `${prev}\n❌ '/recipes' endpoint: Not available in ${JSON.stringify(endpoints)}`);
-        }
-      } catch (rootError) {
-        setDebugInfo(prev => `${prev}\n❌ API Root: Connection failed\nError: ${rootError.message}`);
-      }
-      
-      // Try to access the /recipes endpoint
-      try {
-        const recipesResponse = await axios.get(`${API_URL}/recipes`, { timeout: 8000 });
-        setDebugInfo(prev => `${prev}\n✅ '/recipes' endpoint: Connected successfully\nResponse Type: ${typeof recipesResponse.data}\nIs Array: ${Array.isArray(recipesResponse.data)}\nLength/Keys: ${Array.isArray(recipesResponse.data) ? recipesResponse.data.length : Object.keys(recipesResponse.data).join(', ')}`);
-      } catch (recipesError) {
-        setDebugInfo(prev => `${prev}\n❌ '/recipes' endpoint: Connection failed\nError: ${recipesError.message}`);
-      }
-      
-      // Check environment variables (from client-side)
-      setDebugInfo(prev => `${prev}\n\nEnvironment Variables:\nNEXT_PUBLIC_API_URL: ${process.env.NEXT_PUBLIC_API_URL || 'Not set'}\nNEXT_PUBLIC_USE_MOCK_DATA: ${process.env.NEXT_PUBLIC_USE_MOCK_DATA || 'Not set'}`);
-      
-      // Check fallback service
-      try {
-        const fallbackDishes = await fallbackService.searchDishes('');
-        setDebugInfo(prev => `${prev}\n\nFallback Service:\nWorking: ${fallbackDishes.length > 0 ? 'Yes' : 'No'}\nDishes Available: ${fallbackDishes.length}`);
-      } catch (fallbackError) {
-        setDebugInfo(prev => `${prev}\n\nFallback Service:\nError: ${fallbackError.message}`);
-      }
-    } catch (error) {
-      setDebugInfo(prev => `${prev}\n\n❌ Unexpected error during diagnostics: ${error.message}`);
-    }
-  };
-  
-  // Add function to push sample data to backend
-  const pushSampleData = async () => {
-    if (isUploading) return;
-    
-    setIsUploading(true);
-    setDebugInfo("Pushing sample data to backend API...");
-    
-    try {
-      const result = await restaurantBackendHelper.pushSampleDishesToBackend();
-      setDebugInfo(prev => `${prev}\n\n${result.message}`);
-      
-      if (result.success) {
-        setDebugInfo(prev => `${prev}\n✅ Successfully pushed sample data to backend!`);
-      } else {
-        setDebugInfo(prev => `${prev}\n❌ Failed to push all sample data.`);
-      }
-    } catch (error: any) {
-      setDebugInfo(prev => `${prev}\n❌ Error: ${error.message || 'Unknown error'}`);
-    } finally {
-      setIsUploading(false);
-    }
-  };
-  
   return (
     <Box>
       {/* Search Section */}
@@ -309,35 +231,6 @@ const RestaurantRecreator: React.FC = () => {
             : `Connected to API: ${API_URL}`
           }
         </Typography>
-        
-        {/* Debug buttons */}
-        <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
-          <Button 
-            variant="outlined" 
-            size="small" 
-            onClick={runDiagnostics}
-          >
-            Run API Diagnostics
-          </Button>
-          
-          <Button 
-            variant="outlined" 
-            color="secondary"
-            size="small" 
-            onClick={pushSampleData}
-            disabled={isUploading}
-          >
-            {isUploading ? "Uploading..." : "Push Sample Data to Backend"}
-          </Button>
-        </Box>
-        
-        {debugInfo && (
-          <Paper sx={{ p: 2, mb: 2, bgcolor: 'background.default', maxHeight: '200px', overflow: 'auto' }}>
-            <Typography variant="caption" component="pre" sx={{ whiteSpace: 'pre-wrap', fontSize: '0.7rem' }}>
-              {debugInfo}
-            </Typography>
-          </Paper>
-        )}
         
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={8}>

@@ -10,14 +10,11 @@ import {
   Chip,
   IconButton,
   Stack,
-  Card,
-  CardContent,
   FormControl,
   InputLabel,
   MenuItem,
   Select,
   Grid,
-  Divider,
   Paper,
   Tab,
   Tabs
@@ -65,14 +62,23 @@ interface LunchboxPlan {
 // Common age options
 const ageOptions = Array.from({ length: 15 }, (_, i) => i + 3);
 
-// Common food preference options
-const commonPreferences = [
+// Create a categorized display for preferences
+const dietaryPreferences = [
+  "Vegetarian",
+  "Vegan",
+  "Gluten-Free",
+  "Dairy-Free",
+  "Sugar-Free", 
+  "Low-Carb",
+];
+
+const tastePreferences = [
   "Loves sweet foods",
   "Prefers savory foods",
   "Enjoys crunchy textures",
   "Likes soft foods",
   "Loves fruits",
-  "Vegetable enthusiast",
+  "Vegetable enthusiast", 
   "Loves pasta",
   "Sandwich lover",
 ];
@@ -447,12 +453,30 @@ export default function LunchboxPlannerPage() {
                 </Button>
               </Stack>
               
-              {/* Common Preferences */}
+              {/* Dietary Preferences */}
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Common preferences:
+                Dietary preferences:
               </Typography>
               <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 2 }}>
-                {commonPreferences.map((pref, idx) => (
+                {dietaryPreferences.map((pref, idx) => (
+                  <Chip
+                    key={idx}
+                    label={pref}
+                    size="small"
+                    color="primary"
+                    variant={child.preferences.includes(pref) ? "filled" : "outlined"}
+                    onClick={() => handleAddPreference(index, pref)}
+                    sx={{ mb: 1 }}
+                  />
+                ))}
+              </Stack>
+              
+              {/* Taste Preferences */}
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Taste preferences:
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 2 }}>
+                {tastePreferences.map((pref, idx) => (
                   <Chip
                     key={idx}
                     label={pref}
@@ -465,16 +489,21 @@ export default function LunchboxPlannerPage() {
               
               {/* Selected Preferences */}
               {child.preferences.length > 0 && (
-                <Stack direction="row" spacing={1} flexWrap="wrap">
-                  {child.preferences.map((pref, prefIndex) => (
-                    <Chip
-                      key={prefIndex}
-                      label={pref}
-                      onDelete={() => handleRemovePreference(index, prefIndex)}
-                      sx={{ mb: 1 }}
-                    />
-                  ))}
-                </Stack>
+                <>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    Selected preferences:
+                  </Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap">
+                    {child.preferences.map((pref, prefIndex) => (
+                      <Chip
+                        key={prefIndex}
+                        label={pref}
+                        onDelete={() => handleRemovePreference(index, prefIndex)}
+                        sx={{ mb: 1 }}
+                      />
+                    ))}
+                  </Stack>
+                </>
               )}
             </Grid>
             

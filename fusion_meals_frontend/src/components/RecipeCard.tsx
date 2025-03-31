@@ -1,24 +1,20 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Clipboard, CheckCircle, Save, Star, MessageSquare, Share2, ThumbsUp, MessageCircle } from 'lucide-react';
+import { Clipboard, CheckCircle, Save, MessageSquare, Share2, ThumbsUp, MessageCircle, Printer } from 'lucide-react';
 import toast from 'react-hot-toast';
-import downloadAsPDF from '@/utils/downloadAsPDF';
 import GroceryList from './GroceryList';
 import FormattedRecipe from './FormattedRecipe';
+import RecipeExportModal from './RecipeExportModal';
 
 interface RecipeCardProps {
   recipe: string;
   imageUrl?: string | null;
-  ingredients: string[];
   nutritionalAnalysis?: Record<string, string>;
   cookingTips?: string[];
   winePairing?: string;
   storageInstructions?: string;
   isPremium?: boolean;
   recipeId?: string;
-  onSave?: () => void;
-  onDownload?: () => void;
-  onAddToCart?: () => void;
 }
 
 interface Review {
@@ -31,16 +27,12 @@ interface Review {
 const RecipeCard: React.FC<RecipeCardProps> = ({
   recipe,
   imageUrl,
-  ingredients,
   nutritionalAnalysis,
   cookingTips,
   winePairing,
   storageInstructions,
   isPremium = false,
   recipeId,
-  onSave,
-  onDownload,
-  onAddToCart,
 }) => {
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -54,6 +46,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   const [shareUrl, setShareUrl] = useState<string>('');
   const [likes, setLikes] = useState<number>(0);
   const [hasLiked, setHasLiked] = useState<boolean>(false);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   useEffect(() => {
     if (recipeId) {
@@ -132,10 +125,6 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
     toast.success('✅ Recipe saved successfully!');
   };
 
-  const handleDownloadPDF = () => {
-    downloadAsPDF(recipe, 'Fusion_Recipe');
-  };
-
   const handleLike = async () => {
     try {
       const response = await fetch(`/api/recipe-ratings/${recipeId}/like`, {
@@ -191,6 +180,11 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
       .join('\n');
     
     return ingredients;
+  };
+
+  // Add function to handle export modal
+  const handleExportClick = () => {
+    setShowExportModal(true);
   };
 
   return (
@@ -258,31 +252,31 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
       )}
 
       {/* Action Buttons */}
-      <div className="mt-6 flex space-x-4">
+      <div className="mt-6 flex flex-wrap gap-2">
         <button
           onClick={copyToClipboard}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center"
         >
-          {copied ? <CheckCircle size={20} /> : <Clipboard size={20} />} {copied ? 'Copied!' : 'Copy'}
+          {copied ? <CheckCircle size={18} className="mr-1" /> : <Clipboard size={18} className="mr-1" />} {copied ? 'Copied!' : 'Copy'}
         </button>
         <button
           onClick={saveRecipe}
           disabled={saved}
           className={`${
             saved ? 'bg-gray-400' : 'bg-green-500 hover:bg-green-600'
-          } text-white py-2 px-4 rounded-full shadow-md transition-all duration-300`}
+          } text-white py-2 px-3 rounded flex items-center transition-all duration-300`}
         >
-          <Save size={20} /> {saved ? 'Saved' : 'Save'}
+          <Save size={18} className="mr-1" /> {saved ? 'Saved' : 'Save'}
         </button>
         <button
-          onClick={handleDownloadPDF}
-          className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+          onClick={handleExportClick}
+          className="px-3 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors flex items-center"
         >
-          Download PDF
+          <Printer size={18} className="mr-1" /> Print & Export
         </button>
         <button
           onClick={() => setShowGroceryList(!showGroceryList)}
-          className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
+          className="px-3 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors flex items-center"
         >
           {showGroceryList ? 'Hide Grocery List' : 'Show Grocery List'}
         </button>
@@ -460,6 +454,15 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
           </div>
         </div>
       )}
+
+      {/* Export Modal */}
+      <RecipeExportModal
+        open={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        recipe={recipe}
+        imageUrl={imageUrl || undefined}
+        title={recipe.match(/\*\*Recipe Name\*\*:([^*]*)/)?.[1]?.trim()}
+      />
     </div>
   );
 };

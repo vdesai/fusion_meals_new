@@ -1,10 +1,55 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Sparkles, PlusCircle, Calendar, Users, XCircle, School, Loader2, Printer, Download } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import React, { useState, useRef } from "react";
+import {
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Container,
+  Divider,
+  FormControl,
+  FormControlLabel,
+  Grid,
+  IconButton,
+  InputLabel,
+  List,
+  ListItem,
+  ListItemText,
+  MenuItem,
+  Paper,
+  Select,
+  Stack,
+  Switch,
+  Tab,
+  Tabs,
+  TextField,
+  Typography,
+  Box,
+} from "@mui/material";
+import { 
+  Plus, 
+  X, 
+  Printer, 
+  FileDown, 
+  UserPlus, 
+  ShoppingBasket,
+  CalendarDays,
+  Utensils
+} from "lucide-react";
+import { toast } from "react-hot-toast";
+import { useReactToPrint } from "react-to-print";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
-// Define interfaces for our data structures
+// Define interfaces
+interface Child {
+  name: string;
+  age: number;
+  preferences: string[];
+  allergies: string[];
+}
+
 interface LunchItem {
   name: string;
   description: string;
@@ -39,592 +84,709 @@ interface LunchboxPlan {
   };
 }
 
+// Common age options
+const ageOptions = Array.from({ length: 15 }, (_, i) => i + 3);
+
+// Common food preference options
+const commonPreferences = [
+  "Loves sweet foods",
+  "Prefers savory foods",
+  "Enjoys crunchy textures",
+  "Likes soft foods",
+  "Loves fruits",
+  "Vegetable enthusiast",
+  "Loves pasta",
+  "Sandwich lover",
+];
+
+// Common allergy options
+const commonAllergies = [
+  "Peanuts",
+  "Tree nuts",
+  "Milk/Dairy",
+  "Eggs",
+  "Wheat/Gluten",
+  "Soy",
+  "Fish",
+  "Shellfish",
+  "Sesame",
+];
+
+// Default child template
+const defaultChild: Child = {
+  name: "",
+  age: 5,
+  preferences: [],
+  allergies: [],
+};
+
+// Days of the week
+const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
 export default function LunchboxPlannerPage() {
-  // State for form inputs
-  const [loading, setLoading] = useState(false);
-  const [children, setChildren] = useState<{ name: string; age: number; preferences: string[]; allergies: string[] }[]>([
-    { name: '', age: 5, preferences: [], allergies: [] }
-  ]);
-  const [daysToGenerate, setDaysToGenerate] = useState(5);
-  const [newPreference, setNewPreference] = useState('');
-  const [newAllergy, setNewAllergy] = useState('');
-  const [tempChildIndex, setTempChildIndex] = useState(0);
+  // State for managing tabs
+  const [activeTab, setActiveTab] = useState(0);
   
-  // State for generated plan
+  // State for children
+  const [children, setChildren] = useState<Child[]>([{ ...defaultChild }]);
+  const [newPreference, setNewPreference] = useState("");
+  const [newAllergy, setNewAllergy] = useState("");
+  const [selectedChildIndex, setSelectedChildIndex] = useState(0);
+  
+  // State for days
+  const [selectedDays, setSelectedDays] = useState<number>(5);
+  
+  // State for loading
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // State for lunchbox plan
   const [lunchboxPlan, setLunchboxPlan] = useState<LunchboxPlan | null>(null);
   
-  // Handle adding a child
-  const addChild = () => {
-    setChildren([...children, { name: '', age: 5, preferences: [], allergies: [] }]);
+  // State for active plan tab
+  const [activePlanTab, setActivePlanTab] = useState(0);
+  const [activeChildTab, setActiveChildTab] = useState(0);
+  
+  // Ref for printing
+  const printRef = useRef<HTMLDivElement>(null);
+
+  // Handler for tab changes
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
   };
   
-  // Handle removing a child
-  const removeChild = (index: number) => {
-    const newChildren = [...children];
-    newChildren.splice(index, 1);
-    setChildren(newChildren);
+  // Handler for plan tab changes
+  const handlePlanTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActivePlanTab(newValue);
   };
   
-  // Handle child name change
-  const handleChildNameChange = (index: number, name: string) => {
-    const newChildren = [...children];
-    newChildren[index].name = name;
-    setChildren(newChildren);
+  // Handler for child tab changes
+  const handleChildTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveChildTab(newValue);
   };
-  
-  // Handle child age change
-  const handleChildAgeChange = (index: number, age: number) => {
-    const newChildren = [...children];
-    newChildren[index].age = age;
-    setChildren(newChildren);
+
+  // Handler for adding a child
+  const handleAddChild = () => {
+    setChildren([...children, { ...defaultChild, name: `Child ${children.length + 1}` }]);
   };
-  
-  // Add preference to a child
-  const addPreference = () => {
-    if (newPreference.trim() && !children[tempChildIndex].preferences.includes(newPreference.trim())) {
-      const newChildren = [...children];
-      newChildren[tempChildIndex].preferences.push(newPreference.trim());
-      setChildren(newChildren);
-      setNewPreference('');
-    }
-  };
-  
-  // Remove preference from a child
-  const removePreference = (childIndex: number, preference: string) => {
-    const newChildren = [...children];
-    newChildren[childIndex].preferences = newChildren[childIndex].preferences.filter(p => p !== preference);
-    setChildren(newChildren);
-  };
-  
-  // Add allergy to a child
-  const addAllergy = () => {
-    if (newAllergy.trim() && !children[tempChildIndex].allergies.includes(newAllergy.trim())) {
-      const newChildren = [...children];
-      newChildren[tempChildIndex].allergies.push(newAllergy.trim());
-      setChildren(newChildren);
-      setNewAllergy('');
-    }
-  };
-  
-  // Remove allergy from a child
-  const removeAllergy = (childIndex: number, allergy: string) => {
-    const newChildren = [...children];
-    newChildren[childIndex].allergies = newChildren[childIndex].allergies.filter(a => a !== allergy);
-    setChildren(newChildren);
-  };
-  
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+
+  // Handler for removing a child
+  const handleRemoveChild = (index: number) => {
+    const updatedChildren = [...children];
+    updatedChildren.splice(index, 1);
+    setChildren(updatedChildren);
     
-    // Validate inputs
-    if (children.some(child => !child.name.trim())) {
-      toast.error('Please provide a name for each child.');
-      return;
+    // Update selected child index if needed
+    if (selectedChildIndex >= updatedChildren.length) {
+      setSelectedChildIndex(Math.max(0, updatedChildren.length - 1));
+    }
+  };
+
+  // Handler for updating child info
+  const handleChildInfoChange = (index: number, field: keyof Child, value: string | number) => {
+    const updatedChildren = [...children];
+    updatedChildren[index] = { ...updatedChildren[index], [field]: value };
+    setChildren(updatedChildren);
+  };
+
+  // Handler for adding a preference
+  const handleAddPreference = (index: number, preference: string) => {
+    if (!preference.trim()) return;
+    
+    const updatedChildren = [...children];
+    if (!updatedChildren[index].preferences.includes(preference)) {
+      updatedChildren[index].preferences = [...updatedChildren[index].preferences, preference];
+      setChildren(updatedChildren);
+    }
+    setNewPreference("");
+  };
+
+  // Handler for removing a preference
+  const handleRemovePreference = (childIndex: number, preferenceIndex: number) => {
+    const updatedChildren = [...children];
+    updatedChildren[childIndex].preferences.splice(preferenceIndex, 1);
+    setChildren(updatedChildren);
+  };
+
+  // Handler for adding an allergy
+  const handleAddAllergy = (index: number, allergy: string) => {
+    if (!allergy.trim()) return;
+    
+    const updatedChildren = [...children];
+    if (!updatedChildren[index].allergies.includes(allergy)) {
+      updatedChildren[index].allergies = [...updatedChildren[index].allergies, allergy];
+      setChildren(updatedChildren);
+    }
+    setNewAllergy("");
+  };
+
+  // Handler for removing an allergy
+  const handleRemoveAllergy = (childIndex: number, allergyIndex: number) => {
+    const updatedChildren = [...children];
+    updatedChildren[childIndex].allergies.splice(allergyIndex, 1);
+    setChildren(updatedChildren);
+  };
+
+  // Validate form before submission
+  const validateForm = (): boolean => {
+    // Check if we have at least one child
+    if (children.length === 0) {
+      toast.error("Please add at least one child");
+      return false;
     }
     
-    setLoading(true);
+    // Check if all children have names
+    for (let i = 0; i < children.length; i++) {
+      if (!children[i].name.trim()) {
+        toast.error(`Please enter a name for Child ${i+1}`);
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
+  // Handle generating lunchbox plan
+  const handleGeneratePlan = async () => {
+    if (!validateForm()) return;
+    
+    setIsLoading(true);
+    console.log('🚀 Generating lunchbox plan...');
     
     try {
-      // For MVP, generate mock data
-      // In production, this would call the backend API
-      const mockPlan = generateMockLunchboxPlan();
-      setLunchboxPlan(mockPlan);
-      toast.success('Lunchbox plan generated successfully!');
-    } catch (error) {
-      console.error('Error generating lunchbox plan:', error);
-      toast.error('Failed to generate lunchbox plan. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Generate a mock lunchbox plan for testing
-  const generateMockLunchboxPlan = (): LunchboxPlan => {
-    const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-    const plan: LunchboxPlan = {
-      children: [],
-      grocery_list: {
-        'Fruits': ['Apples', 'Bananas', 'Grapes', 'Strawberries', 'Blueberries'],
-        'Vegetables': ['Carrots', 'Cucumber', 'Bell peppers', 'Cherry tomatoes', 'Celery'],
-        'Proteins': ['Turkey', 'Chicken', 'Tuna', 'Eggs', 'Greek yogurt'],
-        'Grains': ['Whole wheat bread', 'Tortillas', 'Pasta', 'Brown rice', 'Quinoa'],
-        'Dairy': ['Cheese sticks', 'Milk', 'Yogurt'],
-        'Snacks': ['Granola bars', 'Crackers', 'Popcorn', 'Trail mix'],
-        'Other': ['Hummus', 'Peanut butter', 'Jelly', 'Mayonnaise']
-      }
-    };
-    
-    children.forEach(child => {
-      const childPlan: ChildLunchPlan = {
-        child_name: child.name,
-        age: child.age,
-        daily_lunches: {}
-      };
+      console.log('📤 Making request to /api/generate-lunchbox-plan');
+      console.log('📦 Request payload:', JSON.stringify({
+        children,
+        days: selectedDays,
+      }, null, 2));
       
-      // Generate lunches for each day
-      daysOfWeek.slice(0, daysToGenerate).forEach(day => {
-        childPlan.daily_lunches[day] = {
-          main: {
-            name: ['Turkey & Cheese Sandwich', 'Tuna Wrap', 'Pasta Salad', 'Chicken Quesadilla', 'PB&J Sandwich'][Math.floor(Math.random() * 5)],
-            description: 'Nutritious main dish made with whole grains and lean protein.',
-            nutritional_info: {
-              calories: 250 + Math.floor(Math.random() * 100),
-              protein: '10-15g',
-              carbs: '25-30g',
-              fat: '8-12g'
-            },
-            allergens: [],
-            prep_time: '5-10 mins'
-          },
-          fruit: {
-            name: ['Apple Slices', 'Banana', 'Grapes', 'Orange Segments', 'Strawberries'][Math.floor(Math.random() * 5)],
-            description: 'Fresh fruit for vitamins and natural sweetness.',
-            nutritional_info: {
-              calories: 60 + Math.floor(Math.random() * 40),
-              protein: '0-1g',
-              carbs: '15-20g',
-              fat: '0g'
-            },
-            allergens: [],
-            prep_time: '2 mins'
-          },
-          vegetable: {
-            name: ['Carrot Sticks', 'Cucumber Slices', 'Bell Pepper Strips', 'Cherry Tomatoes', 'Celery with Peanut Butter'][Math.floor(Math.random() * 5)],
-            description: 'Crunchy vegetables with dip.',
-            nutritional_info: {
-              calories: 30 + Math.floor(Math.random() * 20),
-              protein: '1-2g',
-              carbs: '5-8g',
-              fat: '0-1g'
-            },
-            allergens: [],
-            prep_time: '3 mins'
-          },
-          snack: {
-            name: ['Granola Bar', 'Cheese Stick', 'Trail Mix', 'Yogurt', 'Crackers'][Math.floor(Math.random() * 5)],
-            description: 'Satisfying snack for energy throughout the day.',
-            nutritional_info: {
-              calories: 100 + Math.floor(Math.random() * 50),
-              protein: '2-5g',
-              carbs: '10-15g',
-              fat: '3-7g'
-            },
-            allergens: [],
-            prep_time: '1 min'
-          },
-          drink: {
-            name: ['Water', 'Milk', 'Fruit Smoothie', 'Juice Box', 'Yogurt Drink'][Math.floor(Math.random() * 5)],
-            description: 'Hydration for the day.',
-            nutritional_info: {
-              calories: day.includes('Water') ? 0 : 80 + Math.floor(Math.random() * 40),
-              protein: '0-8g',
-              carbs: '0-15g',
-              fat: '0-2g'
-            },
-            allergens: [],
-            prep_time: '1 min'
-          }
-        };
+      const response = await fetch('/api/generate-lunchbox-plan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          children,
+          days: selectedDays,
+        }),
       });
       
-      plan.children.push(childPlan);
-    });
-    
-    return plan;
-  };
-  
-  // Handle printing
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (printWindow && lunchboxPlan) {
-      printWindow.document.write('<html><head><title>Weekly Lunchbox Plan</title>');
-      printWindow.document.write('<style>');
-      printWindow.document.write(`
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        h1 { text-align: center; margin-bottom: 20px; }
-        h2 { color: #4f46e5; margin-top: 30px; }
-        h3 { margin-top: 20px; }
-        .day { margin-bottom: 30px; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px; }
-        .meal { margin-bottom: 10px; }
-        .meal-name { font-weight: bold; }
-        .grocery-section { margin-top: 40px; }
-        .grocery-category { font-weight: bold; margin-top: 15px; }
-        ul { padding-left: 20px; }
-      `);
-      printWindow.document.write('</style>');
-      printWindow.document.write('</head><body>');
+      console.log('📨 Response status:', response.status);
       
-      printWindow.document.write('<h1>Weekly Lunchbox Plan</h1>');
-      
-      // For each child
-      lunchboxPlan.children.forEach(child => {
-        printWindow.document.write(`<h2>${child.child_name}'s Lunchbox Plan (Age: ${child.age})</h2>`);
+      if (!response.ok) {
+        console.error('❌ API response not OK:', response.status, response.statusText);
+        let errorMessage = 'Failed to generate lunchbox plan';
         
-        // For each day
-        Object.entries(child.daily_lunches).forEach(([day, lunch]) => {
-          printWindow.document.write(`<div class="day"><h3>${day}</h3>`);
-          
-          printWindow.document.write('<div class="meal"><span class="meal-name">Main:</span> ' + lunch.main.name + '</div>');
-          printWindow.document.write('<div class="meal"><span class="meal-name">Fruit:</span> ' + lunch.fruit.name + '</div>');
-          printWindow.document.write('<div class="meal"><span class="meal-name">Vegetable:</span> ' + lunch.vegetable.name + '</div>');
-          printWindow.document.write('<div class="meal"><span class="meal-name">Snack:</span> ' + lunch.snack.name + '</div>');
-          printWindow.document.write('<div class="meal"><span class="meal-name">Drink:</span> ' + lunch.drink.name + '</div>');
-          
-          printWindow.document.write('</div>');
-        });
-      });
+        try {
+          const errorData = await response.json();
+          console.error('❌ Error response:', errorData);
+          errorMessage = errorData.error || errorMessage;
+        } catch (jsonError) {
+          console.error('❌ Could not parse error response as JSON:', jsonError);
+        }
+        
+        throw new Error(errorMessage);
+      }
       
-      // Grocery list
-      printWindow.document.write('<div class="grocery-section"><h2>Grocery List</h2>');
+      const data = await response.json();
+      console.log('✅ Received lunchbox plan data');
+      setLunchboxPlan(data);
       
-      Object.entries(lunchboxPlan.grocery_list).forEach(([category, items]) => {
-        printWindow.document.write(`<div class="grocery-category">${category}</div>`);
-        printWindow.document.write('<ul>');
-        items.forEach(item => {
-          printWindow.document.write(`<li>${item}</li>`);
-        });
-        printWindow.document.write('</ul>');
-      });
+      // Switch to Plan Results tab
+      setActiveTab(1);
+      toast.success("Lunchbox plan generated successfully!");
+    } catch (error) {
+      console.error('❌ Error in lunchbox plan generation:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to generate lunchbox plan');
       
-      printWindow.document.write('</div>');
-      
-      printWindow.document.write('</body></html>');
-      printWindow.document.close();
-      
-      printWindow.onload = function() {
-        printWindow.print();
-        printWindow.onafterprint = function() {
-          printWindow.close();
-        };
-      };
+      // FOR DEBUGGING: Show toast with error details
+      if (error instanceof Error) {
+        console.error('Error details:', error.stack);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
-  
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-center mb-2 flex items-center justify-center">
-        <School className="h-8 w-8 text-purple-500 mr-2" />
-        Kids' Lunchbox Planner
-      </h1>
-      <p className="text-gray-600 dark:text-gray-400 text-center mb-8">
-        Plan nutritious school lunches for your children with our AI-powered lunchbox planner
-      </p>
+
+  // Set up react-to-print
+  const handlePrint = useReactToPrint({
+    content: () => printRef.current,
+    documentTitle: "Lunchbox Meal Plan",
+    onBeforePrint: () => {
+      toast.loading("Preparing to print...");
+    },
+    onAfterPrint: () => {
+      toast.dismiss();
+      toast.success("Print prepared successfully!");
+    },
+  });
+
+  // Handle downloading as PDF
+  const handleDownloadPDF = async () => {
+    if (!printRef.current) return;
+
+    toast.loading("Generating PDF...");
+
+    try {
+      const canvas = await html2canvas(printRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const imgWidth = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      pdf.save("Lunchbox_Meal_Plan.pdf");
+
+      toast.dismiss();
+      toast.success("PDF downloaded successfully!");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.dismiss();
+      toast.error("Failed to generate PDF");
+    }
+  };
+
+  // Render the Input Form
+  const renderInputForm = () => (
+    <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+      <Stack direction="row" spacing={2} alignItems="center" mb={3}>
+        <Typography variant="h5" component="h2">
+          Children Information
+        </Typography>
+        <Button 
+          startIcon={<UserPlus size={18} />} 
+          variant="outlined" 
+          onClick={handleAddChild}
+          size="small"
+        >
+          Add Child
+        </Button>
+      </Stack>
       
-      <div className="grid md:grid-cols-2 gap-8">
-        {/* Form section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-          <form onSubmit={handleSubmit}>
-            <div className="mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Your Children</h2>
-                <button
-                  type="button"
-                  onClick={addChild}
-                  className="flex items-center text-sm text-purple-600 hover:text-purple-800"
+      {/* Child Tabs */}
+      <Tabs
+        value={selectedChildIndex}
+        onChange={(e, newValue) => setSelectedChildIndex(newValue)}
+        sx={{ mb: 2 }}
+        variant="scrollable"
+        scrollButtons="auto"
+      >
+        {children.map((child, index) => (
+          <Tab 
+            key={index} 
+            label={child.name || `Child ${index + 1}`} 
+            icon={
+              children.length > 1 ? (
+                <IconButton 
+                  size="small" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveChild(index);
+                  }}
                 >
-                  <PlusCircle className="h-4 w-4 mr-1" />
-                  Add Child
-                </button>
-              </div>
+                  <X size={14} />
+                </IconButton>
+              ) : undefined
+            }
+            iconPosition="end"
+          />
+        ))}
+      </Tabs>
+      
+      {/* Selected Child Form */}
+      {children.map((child, index) => (
+        <div key={index} style={{ display: selectedChildIndex === index ? 'block' : 'none' }}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Child's Name"
+                value={child.name}
+                onChange={(e) => handleChildInfoChange(index, 'name', e.target.value)}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Age</InputLabel>
+                <Select
+                  value={child.age}
+                  onChange={(e) => handleChildInfoChange(index, 'age', e.target.value)}
+                  label="Age"
+                >
+                  {ageOptions.map((age) => (
+                    <MenuItem key={age} value={age}>
+                      {age} years old
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            
+            {/* Preferences Section */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                Food Preferences (Optional)
+              </Typography>
+              <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                <TextField
+                  size="small"
+                  label="Add preference"
+                  value={newPreference}
+                  onChange={(e) => setNewPreference(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAddPreference(index, newPreference);
+                    }
+                  }}
+                  sx={{ flexGrow: 1 }}
+                />
+                <Button
+                  variant="contained"
+                  onClick={() => handleAddPreference(index, newPreference)}
+                  startIcon={<Plus size={18} />}
+                >
+                  Add
+                </Button>
+              </Stack>
               
-              {children.map((child, index) => (
-                <div key={index} className="mb-5 p-4 border border-gray-200 rounded-lg">
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="font-medium">Child {index + 1}</h3>
-                    {children.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeChild(index)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <XCircle className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 mb-3">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Name</label>
-                      <input
-                        type="text"
-                        value={child.name}
-                        onChange={(e) => handleChildNameChange(index, e.target.value)}
-                        className="w-full p-2 border rounded-md"
-                        placeholder="Child's name"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Age</label>
-                      <select
-                        value={child.age}
-                        onChange={(e) => handleChildAgeChange(index, parseInt(e.target.value))}
-                        className="w-full p-2 border rounded-md"
-                      >
-                        {[...Array(13)].map((_, i) => (
-                          <option key={i} value={i + 3}>
-                            {i + 3} years old
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <div className="mb-3">
-                    <label className="block text-sm font-medium mb-1">Food Preferences</label>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {child.preferences.map((pref, prefIndex) => (
-                        <div key={prefIndex} className="flex items-center bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-sm">
-                          <span>{pref}</span>
-                          <button
-                            type="button"
-                            onClick={() => removePreference(index, pref)}
-                            className="ml-1 text-purple-600 hover:text-purple-800"
-                          >
-                            <XCircle className="h-3 w-3" />
-                          </button>
-                        </div>
+              {/* Common Preferences */}
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Common preferences:
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 2 }}>
+                {commonPreferences.map((pref, idx) => (
+                  <Chip
+                    key={idx}
+                    label={pref}
+                    size="small"
+                    onClick={() => handleAddPreference(index, pref)}
+                    sx={{ mb: 1 }}
+                  />
+                ))}
+              </Stack>
+              
+              {/* Selected Preferences */}
+              {child.preferences.length > 0 && (
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                  {child.preferences.map((pref, prefIndex) => (
+                    <Chip
+                      key={prefIndex}
+                      label={pref}
+                      onDelete={() => handleRemovePreference(index, prefIndex)}
+                      sx={{ mb: 1 }}
+                    />
+                  ))}
+                </Stack>
+              )}
+            </Grid>
+            
+            {/* Allergies Section */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                Allergies & Dietary Restrictions (Optional)
+              </Typography>
+              <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                <TextField
+                  size="small"
+                  label="Add allergy"
+                  value={newAllergy}
+                  onChange={(e) => setNewAllergy(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAddAllergy(index, newAllergy);
+                    }
+                  }}
+                  sx={{ flexGrow: 1 }}
+                />
+                <Button
+                  variant="contained"
+                  onClick={() => handleAddAllergy(index, newAllergy)}
+                  startIcon={<Plus size={18} />}
+                >
+                  Add
+                </Button>
+              </Stack>
+              
+              {/* Common Allergies */}
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Common allergies:
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 2 }}>
+                {commonAllergies.map((allergy, idx) => (
+                  <Chip
+                    key={idx}
+                    label={allergy}
+                    size="small"
+                    onClick={() => handleAddAllergy(index, allergy)}
+                    sx={{ mb: 1 }}
+                  />
+                ))}
+              </Stack>
+              
+              {/* Selected Allergies */}
+              {child.allergies.length > 0 && (
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                  {child.allergies.map((allergy, allergyIndex) => (
+                    <Chip
+                      key={allergyIndex}
+                      label={allergy}
+                      onDelete={() => handleRemoveAllergy(index, allergyIndex)}
+                      color="error"
+                      sx={{ mb: 1 }}
+                    />
+                  ))}
+                </Stack>
+              )}
+            </Grid>
+          </Grid>
+        </div>
+      ))}
+      
+      {/* Days Selection */}
+      <Box sx={{ mt: 4, mb: 2 }}>
+        <Typography variant="h6" component="h3" sx={{ mb: 2 }}>
+          Plan Duration
+        </Typography>
+        <FormControl fullWidth>
+          <InputLabel>Days to Plan</InputLabel>
+          <Select
+            value={selectedDays}
+            onChange={(e) => setSelectedDays(e.target.value as number)}
+            label="Days to Plan"
+          >
+            {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+              <MenuItem key={day} value={day}>
+                {day} {day === 1 ? 'day' : 'days'}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+      
+      {/* Generate Button */}
+      <Button
+        variant="contained"
+        color="primary"
+        size="large"
+        fullWidth
+        onClick={handleGeneratePlan}
+        disabled={isLoading}
+        sx={{ mt: 3 }}
+      >
+        {isLoading ? "Generating..." : "Generate Lunchbox Meal Plan"}
+      </Button>
+    </Paper>
+  );
+
+  // Render the Results
+  const renderResults = () => {
+    if (!lunchboxPlan) return null;
+    
+    return (
+      <div>
+        <Stack direction="row" spacing={2} alignItems="center" mb={3}>
+          <Typography variant="h5" component="h2">
+            Your Lunchbox Meal Plan
+          </Typography>
+          <Button 
+            startIcon={<Printer size={18} />}
+            variant="outlined"
+            onClick={() => handlePrint()}
+          >
+            Print
+          </Button>
+          <Button 
+            startIcon={<FileDown size={18} />}
+            variant="outlined"
+            onClick={handleDownloadPDF}
+          >
+            Download PDF
+          </Button>
+        </Stack>
+        
+        <Paper elevation={3} sx={{ mb: 4 }}>
+          <Tabs
+            value={activePlanTab}
+            onChange={handlePlanTabChange}
+            variant="fullWidth"
+          >
+            <Tab icon={<Utensils size={18} />} label="MEAL PLANS" />
+            <Tab icon={<ShoppingBasket size={18} />} label="GROCERY LIST" />
+          </Tabs>
+          
+          {/* Meal Plans Tab */}
+          <Box sx={{ display: activePlanTab === 0 ? 'block' : 'none', p: 3 }}>
+            <Tabs
+              value={activeChildTab}
+              onChange={handleChildTabChange}
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{ mb: 3 }}
+            >
+              {lunchboxPlan.children.map((child, index) => (
+                <Tab key={index} label={child.child_name} />
+              ))}
+            </Tabs>
+            
+            <div ref={printRef}>
+              {lunchboxPlan.children.map((child, childIndex) => (
+                <div key={childIndex} style={{ display: activeChildTab === childIndex ? 'block' : 'none' }}>
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="h6" gutterBottom>
+                      Lunchbox Plan for {child.child_name} ({child.age} years old)
+                    </Typography>
+                    
+                    <Grid container spacing={2}>
+                      {Object.keys(child.daily_lunches).slice(0, selectedDays).map((day) => (
+                        <Grid item xs={12} md={selectedDays <= 3 ? 4 : 6} key={day}>
+                          <Card variant="outlined">
+                            <CardContent>
+                              <Typography variant="h6" color="primary" gutterBottom>
+                                {day}
+                              </Typography>
+                              
+                              <Typography variant="subtitle1" gutterBottom>
+                                Main: {child.daily_lunches[day].main.name}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary" paragraph>
+                                {child.daily_lunches[day].main.description}
+                              </Typography>
+                              
+                              <Divider sx={{ my: 1 }} />
+                              
+                              <Grid container spacing={1}>
+                                <Grid item xs={6}>
+                                  <Typography variant="subtitle2">
+                                    Fruit:
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    {child.daily_lunches[day].fruit.name}
+                                  </Typography>
+                                </Grid>
+                                <Grid item xs={6}>
+                                  <Typography variant="subtitle2">
+                                    Vegetable:
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    {child.daily_lunches[day].vegetable.name}
+                                  </Typography>
+                                </Grid>
+                                <Grid item xs={6}>
+                                  <Typography variant="subtitle2">
+                                    Snack:
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    {child.daily_lunches[day].snack.name}
+                                  </Typography>
+                                </Grid>
+                                <Grid item xs={6}>
+                                  <Typography variant="subtitle2">
+                                    Drink:
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    {child.daily_lunches[day].drink.name}
+                                  </Typography>
+                                </Grid>
+                              </Grid>
+                              
+                              <Box sx={{ mt: 2, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
+                                <Typography variant="caption" sx={{ display: 'block' }}>
+                                  Total Calories: ~{
+                                    child.daily_lunches[day].main.nutritional_info.calories +
+                                    child.daily_lunches[day].fruit.nutritional_info.calories +
+                                    child.daily_lunches[day].vegetable.nutritional_info.calories +
+                                    child.daily_lunches[day].snack.nutritional_info.calories +
+                                    child.daily_lunches[day].drink.nutritional_info.calories
+                                  } kcal
+                                </Typography>
+                                <Typography variant="caption" sx={{ display: 'block' }}>
+                                  Prep Time: {child.daily_lunches[day].main.prep_time}
+                                </Typography>
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        </Grid>
                       ))}
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        type="text"
-                        value={tempChildIndex === index ? newPreference : ''}
-                        onChange={(e) => {
-                          setTempChildIndex(index);
-                          setNewPreference(e.target.value);
-                        }}
-                        onFocus={() => setTempChildIndex(index)}
-                        className="flex-grow p-2 border rounded-l-md"
-                        placeholder="E.g., loves pasta, dislikes spicy"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTempChildIndex(index);
-                          addPreference();
-                        }}
-                        className="px-3 py-2 bg-purple-600 text-white rounded-r-md hover:bg-purple-700"
-                      >
-                        Add
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Allergies/Restrictions</label>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {child.allergies.map((allergy, allergyIndex) => (
-                        <div key={allergyIndex} className="flex items-center bg-red-100 text-red-800 px-2 py-1 rounded-full text-sm">
-                          <span>{allergy}</span>
-                          <button
-                            type="button"
-                            onClick={() => removeAllergy(index, allergy)}
-                            className="ml-1 text-red-600 hover:text-red-800"
-                          >
-                            <XCircle className="h-3 w-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        type="text"
-                        value={tempChildIndex === index ? newAllergy : ''}
-                        onChange={(e) => {
-                          setTempChildIndex(index);
-                          setNewAllergy(e.target.value);
-                        }}
-                        onFocus={() => setTempChildIndex(index)}
-                        className="flex-grow p-2 border rounded-l-md"
-                        placeholder="E.g., nuts, dairy, gluten"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTempChildIndex(index);
-                          addAllergy();
-                        }}
-                        className="px-3 py-2 bg-purple-600 text-white rounded-r-md hover:bg-purple-700"
-                      >
-                        Add
-                      </button>
-                    </div>
-                  </div>
+                    </Grid>
+                  </Box>
                 </div>
               ))}
             </div>
+          </Box>
+          
+          {/* Grocery List Tab */}
+          <Box sx={{ display: activePlanTab === 1 ? 'block' : 'none', p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Grocery List for {selectedDays} {selectedDays === 1 ? 'day' : 'days'}
+            </Typography>
             
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-1">Days to Generate</label>
-              <div className="flex items-center">
-                <Calendar className="h-5 w-5 text-gray-400 mr-2" />
-                <select
-                  value={daysToGenerate}
-                  onChange={(e) => setDaysToGenerate(parseInt(e.target.value))}
-                  className="w-full p-2 border rounded-md"
-                >
-                  <option value={5}>5 days (School week)</option>
-                  <option value={7}>7 days (Full week)</option>
-                </select>
-              </div>
-            </div>
-            
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-md shadow-sm focus:outline-none disabled:opacity-50"
-            >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <Loader2 className="animate-spin h-5 w-5 mr-2" />
-                  Generating Lunch Plans...
-                </div>
-              ) : (
-                <div className="flex items-center justify-center">
-                  <Sparkles className="h-5 w-5 mr-2" />
-                  Generate Lunchbox Plan
-                </div>
-              )}
-            </button>
-          </form>
-        </div>
-        
-        {/* Results section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-          {lunchboxPlan ? (
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Your Lunchbox Plan</h2>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={handlePrint}
-                    className="inline-flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors"
-                  >
-                    <Printer className="h-4 w-4 mr-2" />
-                    Print
-                  </button>
-                </div>
-              </div>
-              
-              {/* Tab navigation for children */}
-              <div className="mb-6">
-                <div className="flex border-b">
-                  {lunchboxPlan.children.map((child, index) => (
-                    <button
-                      key={index}
-                      className={`py-2 px-4 border-b-2 ${
-                        index === 0 ? 'border-purple-500 text-purple-600' : 'border-transparent hover:text-purple-500'
-                      }`}
-                    >
-                      {child.child_name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Display the first child's plan by default */}
-              {lunchboxPlan.children.length > 0 && (
-                <div>
-                  {Object.entries(lunchboxPlan.children[0].daily_lunches).map(([day, lunch]) => (
-                    <div key={day} className="mb-4 p-4 border border-gray-200 rounded-lg">
-                      <h3 className="font-medium text-lg mb-2">{day}</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-purple-50 p-3 rounded-md">
-                          <p className="font-medium">Main</p>
-                          <p>{lunch.main.name}</p>
-                        </div>
-                        <div className="bg-green-50 p-3 rounded-md">
-                          <p className="font-medium">Fruit</p>
-                          <p>{lunch.fruit.name}</p>
-                        </div>
-                        <div className="bg-emerald-50 p-3 rounded-md">
-                          <p className="font-medium">Vegetable</p>
-                          <p>{lunch.vegetable.name}</p>
-                        </div>
-                        <div className="bg-amber-50 p-3 rounded-md">
-                          <p className="font-medium">Snack</p>
-                          <p>{lunch.snack.name}</p>
-                        </div>
-                        <div className="bg-blue-50 p-3 rounded-md col-span-2">
-                          <p className="font-medium">Drink</p>
-                          <p>{lunch.drink.name}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {/* Grocery List */}
-              <div className="mt-8">
-                <h3 className="text-lg font-semibold mb-3">Grocery List</h3>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  {Object.entries(lunchboxPlan.grocery_list).map(([category, items]) => (
-                    <div key={category} className="mb-4">
-                      <h4 className="font-medium text-purple-700 mb-2">{category}</h4>
-                      <ul className="list-disc pl-5 space-y-1">
-                        {items.map((item, i) => (
-                          <li key={i}>{item}</li>
+            <Grid container spacing={2}>
+              {Object.keys(lunchboxPlan.grocery_list).map((category) => (
+                <Grid item xs={12} sm={6} md={4} key={category}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="subtitle1" color="primary" gutterBottom>
+                        {category}
+                      </Typography>
+                      <List dense>
+                        {lunchboxPlan.grocery_list[category].map((item, idx) => (
+                          <ListItem key={idx}>
+                            <ListItemText primary={item} />
+                          </ListItem>
                         ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center p-8">
-              <School className="h-16 w-16 text-purple-200 mb-4" />
-              <h3 className="text-xl font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Let's Plan Some Lunches!
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
-                Fill out the form to get a week's worth of balanced, kid-friendly lunch ideas tailored to your children's preferences.
-              </p>
-              <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-md text-left">
-                <ul className="text-sm space-y-2">
-                  <li className="flex items-start">
-                    <span className="text-purple-600 font-bold mr-2">•</span>
-                    Nutritionally balanced meals for growing children
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-purple-600 font-bold mr-2">•</span>
-                    Variety of options to prevent lunchbox boredom
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-purple-600 font-bold mr-2">•</span>
-                    Respects allergies and dietary restrictions
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-purple-600 font-bold mr-2">•</span>
-                    Complete grocery list organized by store sections
-                  </li>
-                </ul>
-              </div>
-            </div>
-          )}
-        </div>
+                      </List>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        </Paper>
+        
+        <Box sx={{ mt: 3, mb: 2 }}>
+          <Button 
+            variant="outlined" 
+            onClick={() => setActiveTab(0)}
+            startIcon={<CalendarDays size={18} />}
+          >
+            Plan Another Week
+          </Button>
+        </Box>
       </div>
+    );
+  };
+
+  return (
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Kids&apos; Lunchbox Meal Planner
+      </Typography>
       
-      <div className="mt-10 bg-purple-50 dark:bg-purple-900/20 rounded-lg p-6">
-        <h2 className="text-xl font-semibold text-purple-700 dark:text-purple-300 mb-2 flex items-center">
-          <Sparkles className="h-5 w-5 mr-2" />
-          Lunchbox Planner Features
-        </h2>
-        <p className="text-purple-600 dark:text-purple-400 mb-2">
-          Our AI-powered lunchbox planner takes the stress out of daily lunch prep for busy parents.
-        </p>
-        <ul className="list-disc pl-6 space-y-1 text-purple-600 dark:text-purple-400">
-          <li>Age-appropriate nutrition for each child</li>
-          <li>Balanced meals with appropriate portions</li>
-          <li>Variety of options to prevent lunchbox boredom</li>
-          <li>Accommodates multiple children with different preferences</li>
-          <li>Weekly grocery list to streamline shopping</li>
-          <li>Print-friendly formats for easy reference</li>
-        </ul>
-      </div>
-    </div>
+      <Typography variant="body1" color="text.secondary" paragraph>
+        Plan nutritious and balanced school lunches for your children based on their age, 
+        preferences, and dietary restrictions. Get personalized meal plans, grocery lists, 
+        and preparation tips.
+      </Typography>
+      
+      <Box sx={{ mb: 4 }}>
+        <Tabs value={activeTab} onChange={handleTabChange}>
+          <Tab label="Plan Details" />
+          <Tab label="Meal Plan" disabled={!lunchboxPlan} />
+        </Tabs>
+      </Box>
+      
+      {activeTab === 0 && renderInputForm()}
+      {activeTab === 1 && renderResults()}
+    </Container>
   );
 } 

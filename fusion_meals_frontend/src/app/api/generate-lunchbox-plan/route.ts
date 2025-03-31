@@ -685,12 +685,16 @@ function generateLunchboxPlan(children: Child[], days: number): LunchboxPlan {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('📣 API endpoint /api/generate-lunchbox-plan called');
+  
   try {
     // Parse request body
     const requestData: LunchboxPlanRequest = await request.json();
+    console.log('📥 Request data received:', JSON.stringify(requestData, null, 2));
     
     // Validate input
     if (!requestData.children || !requestData.children.length) {
+      console.log('❌ Validation error: No children specified');
       return NextResponse.json(
         { error: 'At least one child must be specified' },
         { status: 400 }
@@ -698,6 +702,7 @@ export async function POST(request: NextRequest) {
     }
     
     if (!requestData.days || requestData.days < 1 || requestData.days > 7) {
+      console.log('❌ Validation error: Invalid days value:', requestData.days);
       return NextResponse.json(
         { error: 'Days must be between 1 and 7' },
         { status: 400 }
@@ -705,12 +710,14 @@ export async function POST(request: NextRequest) {
     }
     
     // Generate lunchbox plan
+    console.log('🔄 Generating lunchbox plan...');
     const lunchboxPlan = generateLunchboxPlan(requestData.children, requestData.days);
+    console.log('✅ Lunchbox plan generated successfully');
     
     // Return response
     return NextResponse.json(lunchboxPlan);
   } catch (error) {
-    console.error('Error generating lunchbox plan:', error);
+    console.error('❌ Error generating lunchbox plan:', error);
     return NextResponse.json(
       { error: 'Failed to generate lunchbox plan' },
       { status: 500 }

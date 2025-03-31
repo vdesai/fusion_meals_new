@@ -1,15 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, X, Globe, Home, ChefHat, BookOpen, ClipboardList, Utensils, Info, Scale, User } from "lucide-react";
+import { Menu, X, Globe, Home, ChefHat, BookOpen, ClipboardList, Utensils, Info, Scale } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktopMenuOpen, setIsDesktopMenuOpen] = useState(false);
   const desktopMenuRef = useRef<HTMLDivElement>(null);
-  const { isSignedIn, user } = useUser();
 
   // Close desktop menu when clicking outside of it
   useEffect(() => {
@@ -86,71 +84,21 @@ const Navbar = () => {
             </span>
           </Link>
         </div>
-        
-        {/* Desktop auth and user menu - HIDDEN ON MOBILE */}
-        <div className="hidden lg:flex flex-1 items-center justify-end gap-x-4 relative" ref={desktopMenuRef}>
-          {isSignedIn ? (
-            <>
-              <Link 
-                href="/profile" 
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
-              >
-                {user.fullName || user.username || user.primaryEmailAddress?.emailAddress}
-              </Link>
-              <UserButton afterSignOutUrl="/" />
-              <button 
-                className="p-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-                onClick={() => setIsDesktopMenuOpen(!isDesktopMenuOpen)}
-                aria-expanded={isDesktopMenuOpen}
-                aria-label="User menu"
-              >
-                <Menu className="h-5 w-5 text-indigo-700 dark:text-indigo-400" />
-              </button>
-            </>
-          ) : (
-            <>
-              <SignInButton mode="modal">
-                <button className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-                  Sign in
-                </button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <button className="rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-                  Sign up
-                </button>
-              </SignUpButton>
-              <button 
-                className="p-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-                onClick={() => setIsDesktopMenuOpen(!isDesktopMenuOpen)}
-                aria-expanded={isDesktopMenuOpen}
-                aria-label="User menu"
-              >
-                <Menu className="h-5 w-5 text-indigo-700 dark:text-indigo-400" />
-              </button>
-            </>
-          )}
+        {/* Desktop menu dropdown - HIDDEN ON MOBILE */}
+        <div className="hidden lg:flex flex-1 items-center justify-end gap-x-1 relative" ref={desktopMenuRef}>
+          <button 
+            className="p-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+            onClick={() => setIsDesktopMenuOpen(!isDesktopMenuOpen)}
+            aria-expanded={isDesktopMenuOpen}
+            aria-label="User menu"
+          >
+            <Menu className="h-5 w-5 text-indigo-700 dark:text-indigo-400" />
+          </button>
           
           {/* Desktop menu dropdown */}
           {isDesktopMenuOpen && (
             <div className="absolute right-0 top-10 mt-2 w-56 rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 z-20">
               <div className="py-1">
-                {isSignedIn && (
-                  <>
-                    <Link
-                      href="/profile"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      <User className="mr-3 h-4 w-4" /> My Profile
-                    </Link>
-                    <Link
-                      href="/saved-recipes"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      <BookOpen className="mr-3 h-4 w-4" /> Saved Recipes
-                    </Link>
-                    <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                  </>
-                )}
                 <Link
                   href="/ingredient-substitution"
                   className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -173,7 +121,6 @@ const Navbar = () => {
             </div>
           )}
         </div>
-        
         <div className="flex lg:hidden">
           <button
             type="button"
@@ -205,30 +152,6 @@ const Navbar = () => {
                 <X className="h-6 w-6" aria-hidden="true" />
               </button>
             </div>
-            
-            {/* Mobile menu auth section */}
-            {isSignedIn ? (
-              <div className="mt-4 flex items-center">
-                <UserButton afterSignOutUrl="/" />
-                <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-                  {user.fullName || user.username || user.primaryEmailAddress?.emailAddress}
-                </span>
-              </div>
-            ) : (
-              <div className="mt-4 flex space-x-4">
-                <SignInButton mode="modal">
-                  <button className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-                    Sign in
-                  </button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <button className="rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
-                    Sign up
-                  </button>
-                </SignUpButton>
-              </div>
-            )}
-            
             <div className="mt-6 flow-root">
               <div className="-my-6 divide-y divide-gray-500/10">
                 <div className="space-y-2 py-6">
@@ -242,33 +165,6 @@ const Navbar = () => {
                       Home
                     </div>
                   </Link>
-                  
-                  {/* Add profile-related links for signed-in users */}
-                  {isSignedIn && (
-                    <>
-                      <Link
-                        href="/profile"
-                        className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-indigo-500 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-700"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <div className="flex items-center">
-                          <User className="mr-1 h-4 w-4" />
-                          My Profile
-                        </div>
-                      </Link>
-                      <Link
-                        href="/saved-recipes"
-                        className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-indigo-500 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-700"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <div className="flex items-center">
-                          <BookOpen className="mr-1 h-4 w-4" />
-                          Saved Recipes
-                        </div>
-                      </Link>
-                    </>
-                  )}
-                  
                   <Link
                     href="/generate-recipe"
                     className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-indigo-500 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-700"
@@ -279,7 +175,6 @@ const Navbar = () => {
                       Generate Recipe
                     </div>
                   </Link>
-                  
                   <Link
                     href="/meal-plan"
                     className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-indigo-500 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-700"
@@ -290,7 +185,6 @@ const Navbar = () => {
                       Meal Plan
                     </div>
                   </Link>
-                  
                   <Link
                     href="/global-cuisine"
                     className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-indigo-500 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-700"
@@ -301,7 +195,6 @@ const Navbar = () => {
                       Global Cuisine
                     </div>
                   </Link>
-                  
                   <Link
                     href="/meal-prep"
                     className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-indigo-500 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-700"
@@ -312,7 +205,6 @@ const Navbar = () => {
                       Meal Prep
                     </div>
                   </Link>
-                  
                   <Link
                     href="/ai-chef-premium"
                     className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-indigo-500 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-700"
@@ -326,6 +218,38 @@ const Navbar = () => {
                           Premium
                         </span>
                       </span>
+                    </div>
+                  </Link>
+                </div>
+                <div className="py-6">
+                  <Link
+                    href="/ingredient-substitution"
+                    className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-indigo-500 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-700"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <div className="flex items-center">
+                      <Utensils className="mr-1 h-4 w-4" />
+                      Ingredient Substitution
+                    </div>
+                  </Link>
+                  <Link
+                    href="/recipe-scaling"
+                    className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-indigo-500 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-700"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <div className="flex items-center">
+                      <Scale className="mr-1 h-4 w-4" />
+                      Recipe Scaling
+                    </div>
+                  </Link>
+                  <Link
+                    href="/about"
+                    className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-indigo-500 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-700"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <div className="flex items-center">
+                      <Info className="mr-1 h-4 w-4" />
+                      About Us
                     </div>
                   </Link>
                 </div>

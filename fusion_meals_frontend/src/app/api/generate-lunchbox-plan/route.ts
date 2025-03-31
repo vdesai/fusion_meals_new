@@ -842,16 +842,46 @@ async function generateOpenAIMealPlan(child: Child, days: number): Promise<OpenA
 
     Additionally, generate a consolidated grocery list organized by category (Fruits, Vegetables, Proteins, Grains, Dairy, Other).
 
-    Format your response as structured JSON data ONLY, with no additional text.
+    IMPORTANT: Your response must be a valid JSON object with this exact structure:
+    {
+      "childName": "${child.name}",
+      "age": ${child.age},
+      "dailyMeals": {
+        "Monday": {
+          "main": {
+            "name": "Example Main",
+            "description": "Example description",
+            "nutritionalInfo": {
+              "calories": 250,
+              "protein": "10g",
+              "carbs": "30g",
+              "fat": "8g"
+            },
+            "allergens": ["example allergen"],
+            "prepTime": "5 mins"
+          },
+          "fruit": { same structure as main },
+          "vegetable": { same structure as main },
+          "snack": { same structure as main },
+          "drink": { same structure as main }
+        },
+        // Repeat for each day
+      },
+      "groceryList": {
+        "Category1": ["item1", "item2"],
+        "Category2": ["item3", "item4"]
+      }
+    }
   `;
 
   try {
+    console.log('🔍 Sending request to OpenAI API...');
     const response = await openai.chat.completions.create({
-      model: "gpt-4-turbo-preview",
+      model: "gpt-3.5-turbo", // Use GPT-3.5-Turbo as it's more reliable for this task
       messages: [
         {
           role: "system",
-          content: "You are a certified pediatric nutritionist specializing in creating healthy, balanced meal plans for children. Your meal plans strictly adhere to age-appropriate nutritional guidelines, portion sizes, and food safety considerations. You're especially careful about allergies and dietary preferences."
+          content: "You are a certified pediatric nutritionist specializing in creating healthy, balanced meal plans for children. Your meal plans strictly adhere to age-appropriate nutritional guidelines, portion sizes, and food safety considerations. You're especially careful about allergies and dietary preferences. Your responses must be in valid JSON format."
         },
         {
           role: "user",
@@ -864,47 +894,83 @@ async function generateOpenAIMealPlan(child: Child, days: number): Promise<OpenA
 
     // Parse the response
     const content = response.choices[0].message.content;
+    console.log('✅ Received response from OpenAI');
+    
     if (!content) {
+      console.error('❌ Empty response from OpenAI');
       throw new Error('No content in OpenAI response');
     }
 
-    // Parse the JSON response
-    return JSON.parse(content);
+    // Log a sample of the response to debug
+    console.log('📄 Response preview:', content.substring(0, 200) + '...');
+
+    try {
+      // Parse the JSON response
+      const parsed = JSON.parse(content);
+      
+      // Validate the parsed response has required structure
+      if (!parsed.dailyMeals) {
+        console.error('❌ Missing dailyMeals in parsed response', Object.keys(parsed));
+        throw new Error('Missing dailyMeals property in OpenAI response');
+      }
+      
+      // Check if we have at least one day
+      const dayCount = Object.keys(parsed.dailyMeals).length;
+      if (dayCount === 0) {
+        console.error('❌ No days found in dailyMeals');
+        throw new Error('No days found in OpenAI meal plan');
+      }
+      
+      console.log(`✅ Successfully parsed JSON with ${dayCount} days`);
+      return parsed;
+    } catch (parseError) {
+      console.error('❌ Error parsing OpenAI response as JSON:', parseError);
+      console.error('❌ Raw response:', content);
+      throw new Error('Failed to parse OpenAI response as JSON');
+    }
   } catch (error: unknown) {
-    console.error('Error calling OpenAI:', error);
+    console.error('❌ Error calling OpenAI:', error);
     
     const openAIError = error as OpenAIError;
     
-    // Attempt a fallback to a different model without response_format if that was the error
-    if (openAIError.toString && openAIError.toString().includes('response_format')) {
-      try {
-        console.log('🔄 Retrying with standard gpt-4 model without JSON format...');
-        const fallbackResponse = await openai.chat.completions.create({
-          model: "gpt-4",
-          messages: [
-            {
-              role: "system",
-              content: "You are a certified pediatric nutritionist specializing in creating healthy, balanced meal plans for children. Your meal plans strictly adhere to age-appropriate nutritional guidelines, portion sizes, and food safety considerations. You must respond with ONLY valid JSON that matches the expected format. You're especially careful about allergies and dietary preferences."
-            },
-            {
-              role: "user",
-              content: prompt + "\n\nIMPORTANT: Respond ONLY with valid JSON data matching the exact structure provided, with no additional text or explanations."
-            }
-          ],
-          temperature: 0.7,
-        });
-        
-        const fallbackContent = fallbackResponse.choices[0].message.content;
-        if (!fallbackContent) {
-          throw new Error('No content in fallback OpenAI response');
-        }
-        
-        return JSON.parse(fallbackContent);
-      } catch (fallbackError) {
-        console.error('Error in fallback OpenAI call:', fallbackError);
-        throw new Error(`Failed to generate meal plan with OpenAI: ${openAIError.message || 'Unknown error'}`);
+    // Try a simpler fallback model if there was an error
+    try {
+      console.log('🔄 Calling fallback OpenAI model...');
+      const fallbackResponse = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo", // Use a more reliable model without JSON formatting
+        messages: [
+          {
+            role: "system",
+            content: "You are a certified pediatric nutritionist. You must respond with ONLY valid JSON that matches the expected structure, with no additional text or explanations."
+          },
+          {
+            role: "user",
+            content: prompt + "\n\nIMPORTANT: Respond ONLY with valid JSON data matching the exact structure provided, with no additional text or explanations."
+          }
+        ],
+        temperature: 0.5, // Lower temperature for more predictable output
+      });
+      
+      const fallbackContent = fallbackResponse.choices[0].message.content;
+      if (!fallbackContent) {
+        throw new Error('No content in fallback OpenAI response');
       }
-    } else {
+      
+      console.log('📄 Fallback response preview:', fallbackContent.substring(0, 200) + '...');
+      
+      // Try to parse the JSON, stripping any non-JSON text
+      let jsonContent = fallbackContent;
+      
+      // If it has markdown JSON code blocks, extract just the JSON
+      if (fallbackContent.includes('```json')) {
+        jsonContent = fallbackContent.split('```json')[1].split('```')[0].trim();
+      } else if (fallbackContent.includes('```')) {
+        jsonContent = fallbackContent.split('```')[1].split('```')[0].trim();
+      }
+      
+      return JSON.parse(jsonContent);
+    } catch (fallbackError) {
+      console.error('❌ Error in fallback OpenAI call:', fallbackError);
       throw new Error(`Failed to generate meal plan with OpenAI: ${openAIError.message || 'Unknown error'}`);
     }
   }
@@ -920,8 +986,20 @@ function convertOpenAIMealPlan(openAIPlan: OpenAIMealPlanResponse, child: Child)
     daily_lunches: {}
   };
 
+  // Validate the OpenAI response before processing
+  if (!openAIPlan || !openAIPlan.dailyMeals) {
+    console.error('❌ Invalid OpenAI response structure:', openAIPlan);
+    throw new Error('Invalid response from OpenAI. Missing dailyMeals property.');
+  }
+
   // Convert each day's meal plan
   Object.entries(openAIPlan.dailyMeals).forEach(([day, meals]: [string, OpenAIDailyMeals]) => {
+    // Validate meal data before processing
+    if (!meals || !meals.main || !meals.fruit || !meals.vegetable || !meals.snack || !meals.drink) {
+      console.error(`❌ Invalid meal data for day ${day}:`, meals);
+      return; // Skip this day rather than causing an error
+    }
+
     childPlan.daily_lunches[day] = {
       main: convertMealItem(meals.main),
       fruit: convertMealItem(meals.fruit),
@@ -931,6 +1009,11 @@ function convertOpenAIMealPlan(openAIPlan: OpenAIMealPlanResponse, child: Child)
     };
   });
 
+  // If no valid days were processed, throw an error
+  if (Object.keys(childPlan.daily_lunches).length === 0) {
+    throw new Error('No valid meal plans were found in the OpenAI response.');
+  }
+
   return childPlan;
 }
 
@@ -938,17 +1021,22 @@ function convertOpenAIMealPlan(openAIPlan: OpenAIMealPlanResponse, child: Child)
  * Helper to convert an individual meal item
  */
 function convertMealItem(item: OpenAIMealItem): LunchItem {
+  // Validate required fields
+  if (!item || !item.name || !item.description || !item.nutritionalInfo) {
+    throw new Error(`Invalid meal item data: ${JSON.stringify(item)}`);
+  }
+
   return {
     name: item.name,
     description: item.description,
     nutritional_info: {
-      calories: item.nutritionalInfo.calories,
-      protein: item.nutritionalInfo.protein,
-      carbs: item.nutritionalInfo.carbs,
-      fat: item.nutritionalInfo.fat
+      calories: item.nutritionalInfo.calories || 0,
+      protein: item.nutritionalInfo.protein || '0g',
+      carbs: item.nutritionalInfo.carbs || '0g',
+      fat: item.nutritionalInfo.fat || '0g'
     },
     allergens: item.allergens || [],
-    prep_time: item.prepTime
+    prep_time: item.prepTime || '0 mins'
   };
 }
 
@@ -961,33 +1049,65 @@ async function generateLunchboxPlanWithAI(children: Child[], days: number): Prom
     grocery_list: {}
   };
   
-  // Generate meal plans for each child using OpenAI
-  for (const child of children) {
-    const openAIPlan = await generateOpenAIMealPlan(child, days);
-    const childPlan = convertOpenAIMealPlan(openAIPlan, child);
-    
-    // Add child's plan to overall plan
-    lunchboxPlan.children.push(childPlan);
-    
-    // Use OpenAI's grocery list
-    if (openAIPlan.groceryList) {
-      // Merge the grocery lists
-      Object.entries(openAIPlan.groceryList).forEach(([category, items]: [string, string[]]) => {
-        if (!lunchboxPlan.grocery_list[category]) {
-          lunchboxPlan.grocery_list[category] = [];
+  try {
+    // Generate meal plans for each child using OpenAI
+    for (const child of children) {
+      try {
+        const openAIPlan = await generateOpenAIMealPlan(child, days);
+        
+        // Validate OpenAI response structure before processing
+        if (!openAIPlan || typeof openAIPlan !== 'object') {
+          console.error('❌ OpenAI returned invalid data:', openAIPlan);
+          throw new Error('Invalid response structure from OpenAI');
         }
         
-        // Add unique items
-        items.forEach((item: string) => {
-          if (!lunchboxPlan.grocery_list[category].includes(item)) {
-            lunchboxPlan.grocery_list[category].push(item);
-          }
-        });
-      });
+        console.log('✅ OpenAI response structure:', Object.keys(openAIPlan));
+        
+        const childPlan = convertOpenAIMealPlan(openAIPlan, child);
+        
+        // Add child's plan to overall plan
+        lunchboxPlan.children.push(childPlan);
+        
+        // Use OpenAI's grocery list
+        if (openAIPlan.groceryList) {
+          // Merge the grocery lists
+          Object.entries(openAIPlan.groceryList).forEach(([category, items]: [string, string[]]) => {
+            if (!lunchboxPlan.grocery_list[category]) {
+              lunchboxPlan.grocery_list[category] = [];
+            }
+            
+            // Add unique items
+            items.forEach((item: string) => {
+              if (!lunchboxPlan.grocery_list[category].includes(item)) {
+                lunchboxPlan.grocery_list[category].push(item);
+              }
+            });
+          });
+        } else {
+          console.warn('⚠️ No grocery list found in OpenAI response');
+        }
+      } catch (childError) {
+        console.error(`❌ Error processing meal plan for child "${child.name}":`, childError);
+        throw childError; // Rethrow to be caught by the outer try/catch
+      }
     }
+    
+    // If no children were processed successfully, throw an error
+    if (lunchboxPlan.children.length === 0) {
+      throw new Error('Failed to generate meal plans for any child');
+    }
+    
+    // If no grocery list was generated, create one from scratch
+    if (Object.keys(lunchboxPlan.grocery_list).length === 0) {
+      console.log('⚠️ Creating grocery list from generated meal plans...');
+      lunchboxPlan.grocery_list = createGroceryList(lunchboxPlan);
+    }
+    
+    return lunchboxPlan;
+  } catch (error) {
+    console.error('❌ Error in generateLunchboxPlanWithAI:', error);
+    throw error; // Rethrow to be caught by the POST handler
   }
-  
-  return lunchboxPlan;
 }
 
 // Keep the original functions but modify the POST handler

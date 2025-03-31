@@ -239,6 +239,92 @@ const HomePage = () => {
           </div>
         </section>
 
+        {/* Kids' Lunchbox Planner Feature */}
+        <section className="bg-gradient-to-r from-purple-600 to-indigo-600 py-16 px-4 md:px-8 text-white rounded-lg my-16">
+          <div className="container mx-auto">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="md:w-1/2 flex justify-center order-2 md:order-1">
+                <div className="grid grid-cols-2 gap-4 max-w-md">
+                  <div className="bg-white p-3 rounded-lg shadow-lg transform -rotate-2">
+                    <img 
+                      src="/images/lunchbox/fruit.jpg" 
+                      alt="Healthy Fruit" 
+                      className="w-full h-32 object-cover rounded"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = "https://placehold.co/300x200/9C44DC/ffffff?text=Healthy+Fruits";
+                      }}
+                    />
+                    <p className="text-purple-700 font-medium text-center mt-2">Fruits</p>
+                  </div>
+                  <div className="bg-white p-3 rounded-lg shadow-lg transform rotate-3">
+                    <img 
+                      src="/images/lunchbox/sandwich.jpg" 
+                      alt="Nutritious Sandwich" 
+                      className="w-full h-32 object-cover rounded"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = "https://placehold.co/300x200/9C44DC/ffffff?text=Tasty+Sandwiches";
+                      }}
+                    />
+                    <p className="text-purple-700 font-medium text-center mt-2">Mains</p>
+                  </div>
+                  <div className="bg-white p-3 rounded-lg shadow-lg transform rotate-2">
+                    <img 
+                      src="/images/lunchbox/vegetables.jpg" 
+                      alt="Fresh Vegetables" 
+                      className="w-full h-32 object-cover rounded"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = "https://placehold.co/300x200/9C44DC/ffffff?text=Fresh+Veggies";
+                      }}
+                    />
+                    <p className="text-purple-700 font-medium text-center mt-2">Vegetables</p>
+                  </div>
+                  <div className="bg-white p-3 rounded-lg shadow-lg transform -rotate-3">
+                    <img 
+                      src="/images/lunchbox/snacks.jpg" 
+                      alt="Healthy Snacks" 
+                      className="w-full h-32 object-cover rounded"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = "https://placehold.co/300x200/9C44DC/ffffff?text=Healthy+Snacks";
+                      }}
+                    />
+                    <p className="text-purple-700 font-medium text-center mt-2">Snacks</p>
+                  </div>
+                </div>
+              </div>
+              <div className="md:w-1/2 order-1 md:order-2">
+                <div className="inline-block px-3 py-1 bg-white text-purple-700 rounded-full text-sm font-semibold mb-4">
+                  NEW FEATURE
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Kids&apos; Lunchbox Planner</h2>
+                <p className="text-lg mb-6">
+                  Take the stress out of packing school lunches! Get a week of balanced, kid-friendly lunchbox ideas
+                  tailored to your children&apos;s preferences and dietary needs.
+                </p>
+                <Link 
+                  href="/lunchbox-planner" 
+                  className="inline-flex items-center bg-white text-purple-700 hover:bg-opacity-90 font-medium py-3 px-6 rounded-full transition-all"
+                >
+                  Plan Healthy Lunches 🍎
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* About section */}
+        <section className="py-12 bg-white dark:bg-gray-900 rounded-lg shadow-sm">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl font-bold mb-6">About Us</h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300">
+              Fusion Meals is dedicated to bringing delicious diversity to your plate. Our mission is to blend culinary traditions, adapt recipes to your dietary needs, and create unique meals that tell your story. Let AI guide your cooking adventure.
+            </p>
+          </div>
+        </section>
+
         {/* New Fusion Builder Feature */}
         <section className="py-12 bg-gradient-to-r from-purple-50 to-blue-50">
           <div className="container mx-auto px-4 text-center">

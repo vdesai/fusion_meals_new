@@ -3,13 +3,26 @@
 import Link from "next/link";
 import { Menu, X, Globe, Home, ChefHat, BookOpen, ClipboardList, Utensils, Info, Scale, User, School } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
+
+// Define types for mock authentication
+interface MockUser {
+  fullName?: string;
+  username?: string;
+}
+
+// Mock authentication instead of using Clerk
+const useAuthMock = () => {
+  return {
+    isSignedIn: false,
+    user: null as MockUser | null
+  };
+};
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktopMenuOpen, setIsDesktopMenuOpen] = useState(false);
   const desktopMenuRef = useRef<HTMLDivElement>(null);
-  const { isSignedIn, user } = useUser();
+  const { isSignedIn, user } = useAuthMock();
 
   // Close desktop menu when clicking outside of it
   useEffect(() => {
@@ -102,9 +115,8 @@ const Navbar = () => {
                 href="/profile" 
                 className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
               >
-                {user.fullName || user.username || user.primaryEmailAddress?.emailAddress}
+                {user?.fullName || user?.username || "User"}
               </Link>
-              <UserButton afterSignOutUrl="/" />
               <button 
                 className="p-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
                 onClick={() => setIsDesktopMenuOpen(!isDesktopMenuOpen)}
@@ -116,16 +128,18 @@ const Navbar = () => {
             </>
           ) : (
             <>
-              <SignInButton mode="modal">
-                <button className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-                  Sign in
-                </button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <button className="rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-                  Sign up
-                </button>
-              </SignUpButton>
+              <Link 
+                href="/auth/signin" 
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/auth/signup"
+                className="rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              >
+                Sign up
+              </Link>
               <button 
                 className="p-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
                 onClick={() => setIsDesktopMenuOpen(!isDesktopMenuOpen)}
@@ -212,81 +226,27 @@ const Navbar = () => {
                 <X className="h-6 w-6" aria-hidden="true" />
               </button>
             </div>
-            
-            {/* Mobile menu auth section */}
-            {isSignedIn ? (
-              <div className="mt-4 flex items-center">
-                <UserButton afterSignOutUrl="/" />
-                <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-                  {user.fullName || user.username || user.primaryEmailAddress?.emailAddress}
-                </span>
-              </div>
-            ) : (
-              <div className="mt-4 flex space-x-4">
-                <SignInButton mode="modal">
-                  <button className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-                    Sign in
-                  </button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <button className="rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
-                    Sign up
-                  </button>
-                </SignUpButton>
-              </div>
-            )}
-            
             <div className="mt-6 flow-root">
               <div className="-my-6 divide-y divide-gray-500/10">
                 <div className="space-y-2 py-6">
                   <Link
                     href="/"
-                    className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-indigo-500 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-700"
+                    className="flex items-center px-6 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    <div className="flex items-center">
-                      <Home className="mr-1 h-4 w-4" />
-                      Home
-                    </div>
+                    <Home className="mr-3 h-5 w-5" />
+                    Home
                   </Link>
-                  
-                  {/* Add profile-related links for signed-in users */}
-                  {isSignedIn && (
-                    <>
-                      <Link
-                        href="/profile"
-                        className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-indigo-500 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-700"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <div className="flex items-center">
-                          <User className="mr-1 h-4 w-4" />
-                          My Profile
-                        </div>
-                      </Link>
-                      <Link
-                        href="/saved-recipes"
-                        className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-indigo-500 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-700"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <div className="flex items-center">
-                          <BookOpen className="mr-1 h-4 w-4" />
-                          Saved Recipes
-                        </div>
-                      </Link>
-                    </>
-                  )}
                   
                   <Link
                     href="/generate-recipe"
-                    className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-indigo-500 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-700"
+                    className="flex items-center px-6 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    <div className="flex items-center">
-                      <BookOpen className="mr-1 h-4 w-4" />
-                      Generate Recipe
-                    </div>
+                    <BookOpen className="mr-3 h-5 w-5" />
+                    Generate Recipe
                   </Link>
-                  
+                   
                   <Link
                     href="/meal-plan"
                     className="flex items-center px-6 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -303,7 +263,6 @@ const Navbar = () => {
                     <School className="mr-3 h-5 w-5" />
                     Lunchbox Planner
                   </Link>
-                  
                   <Link
                     href="/global-cuisine"
                     className="flex items-center px-6 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -330,10 +289,29 @@ const Navbar = () => {
                     <ChefHat className="mr-3 h-5 w-5" />
                     <span className="flex items-center">
                       AI Chef
-                      <span className="ml-1 text-xs py-0.5 px-1.5 rounded-md bg-amber-100 text-amber-800">
+                      <span className="ml-2 text-xs py-0.5 px-1.5 rounded-md bg-amber-100 text-amber-800">
                         Premium
                       </span>
                     </span>
+                  </Link>
+                </div>
+                
+                <div className="py-6">
+                  <Link
+                    href="/auth/signin"
+                    className="flex items-center px-6 py-3 text-base font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <User className="mr-3 h-5 w-5" />
+                    Sign in
+                  </Link>
+                  
+                  <Link
+                    href="/auth/signup"
+                    className="flex items-center px-6 py-3 text-base font-medium text-indigo-600 dark:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Sign up
                   </Link>
                 </div>
               </div>

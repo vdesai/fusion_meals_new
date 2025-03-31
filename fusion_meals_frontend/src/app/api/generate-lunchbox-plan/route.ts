@@ -92,6 +92,19 @@ interface OpenAIMealPlanResponse {
   groceryList: Record<string, string[]>;
 }
 
+// Define a more specific error type for OpenAI errors
+interface OpenAIError {
+  toString(): string;
+  message?: string;
+  status?: number;
+  error?: {
+    message: string;
+    type: string;
+    param?: string;
+    code?: string;
+  };
+}
+
 /**
  * Function to find appropriate meals based on age
  */
@@ -834,7 +847,7 @@ async function generateOpenAIMealPlan(child: Child, days: number): Promise<OpenA
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4-turbo-preview",
       messages: [
         {
           role: "system",
@@ -857,9 +870,43 @@ async function generateOpenAIMealPlan(child: Child, days: number): Promise<OpenA
 
     // Parse the JSON response
     return JSON.parse(content);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error calling OpenAI:', error);
-    throw new Error(`Failed to generate meal plan with OpenAI: ${error}`);
+    
+    const openAIError = error as OpenAIError;
+    
+    // Attempt a fallback to a different model without response_format if that was the error
+    if (openAIError.toString && openAIError.toString().includes('response_format')) {
+      try {
+        console.log('🔄 Retrying with standard gpt-4 model without JSON format...');
+        const fallbackResponse = await openai.chat.completions.create({
+          model: "gpt-4",
+          messages: [
+            {
+              role: "system",
+              content: "You are a certified pediatric nutritionist specializing in creating healthy, balanced meal plans for children. Your meal plans strictly adhere to age-appropriate nutritional guidelines, portion sizes, and food safety considerations. You must respond with ONLY valid JSON that matches the expected format. You're especially careful about allergies and dietary preferences."
+            },
+            {
+              role: "user",
+              content: prompt + "\n\nIMPORTANT: Respond ONLY with valid JSON data matching the exact structure provided, with no additional text or explanations."
+            }
+          ],
+          temperature: 0.7,
+        });
+        
+        const fallbackContent = fallbackResponse.choices[0].message.content;
+        if (!fallbackContent) {
+          throw new Error('No content in fallback OpenAI response');
+        }
+        
+        return JSON.parse(fallbackContent);
+      } catch (fallbackError) {
+        console.error('Error in fallback OpenAI call:', fallbackError);
+        throw new Error(`Failed to generate meal plan with OpenAI: ${openAIError.message || 'Unknown error'}`);
+      }
+    } else {
+      throw new Error(`Failed to generate meal plan with OpenAI: ${openAIError.message || 'Unknown error'}`);
+    }
   }
 }
 

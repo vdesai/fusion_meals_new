@@ -1,4 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import OpenAI from 'openai';
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || '',
+});
 
 // Define interfaces
 interface Child {
@@ -55,6 +61,35 @@ interface MealItem {
   calories: number;
   allergens: string[];
   prep_time: string;
+}
+
+// Add these interfaces to handle OpenAI response types
+interface OpenAIMealItem {
+  name: string;
+  description: string;
+  nutritionalInfo: {
+    calories: number;
+    protein: string;
+    carbs: string;
+    fat: string;
+  };
+  allergens: string[];
+  prepTime: string;
+}
+
+interface OpenAIDailyMeals {
+  main: OpenAIMealItem;
+  fruit: OpenAIMealItem;
+  vegetable: OpenAIMealItem;
+  snack: OpenAIMealItem;
+  drink: OpenAIMealItem;
+}
+
+interface OpenAIMealPlanResponse {
+  childName: string;
+  age: number;
+  dailyMeals: Record<string, OpenAIDailyMeals>;
+  groceryList: Record<string, string[]>;
 }
 
 /**
@@ -314,22 +349,77 @@ function getAgeLevelMeals(age: number) {
 }
 
 /**
- * Filter out items containing allergens
+ * Filter out items containing allergens or not matching dietary preferences
  */
-function filterForAllergies(items: MealItem[], allergies: string[]): MealItem[] {
-  if (!allergies.length) return items;
+function filterForAllergies(items: MealItem[], allergies: string[], preferences: string[]): MealItem[] {
+  if (!allergies.length && !preferences.length) return items;
   
   return items.filter(item => {
-    // If an item has no allergens property or it's empty, it's safe
-    if (!item.allergens || !item.allergens.length) return true;
+    // Filter for allergens
+    if (allergies.length > 0 && item.allergens && item.allergens.length > 0) {
+      // Check if any of the item's allergens match the child's allergies
+      const hasAllergen = item.allergens.some(allergen => 
+        allergies.some(allergy => {
+          const allergenLower = allergen.toLowerCase();
+          const allergyLower = allergy.toLowerCase();
+          
+          // Special handling for peanuts/nuts
+          if ((allergyLower === 'nuts' || allergyLower === 'tree nuts') && 
+              (allergenLower.includes('nut') || allergenLower === 'peanuts')) {
+            return true;
+          }
+          
+          return allergenLower.includes(allergyLower) || allergyLower.includes(allergenLower);
+        })
+      );
+      
+      if (hasAllergen) return false;
+    }
     
-    // Check if any of the item's allergens match the child's allergies
-    return !item.allergens.some((allergen: string) => 
-      allergies.some(allergy => 
-        allergen.toLowerCase().includes(allergy.toLowerCase()) || 
-        allergy.toLowerCase().includes(allergen.toLowerCase())
-      )
-    );
+    // Filter for dietary preferences
+    if (preferences.length > 0) {
+      const itemNameLower = item.name.toLowerCase();
+      const itemDescLower = item.description.toLowerCase();
+      
+      // Check for vegetarian preference
+      const isVegetarianPreferred = preferences.some(pref => 
+        pref.toLowerCase().includes('veg')
+      );
+      
+      if (isVegetarianPreferred) {
+        const nonVegTerms = ['turkey', 'chicken', 'beef', 'pork', 'ham', 'fish', 'tuna', 'meat'];
+        if (nonVegTerms.some(term => itemNameLower.includes(term) || itemDescLower.includes(term))) {
+          return false;
+        }
+      }
+      
+      // Check for sugar-free preference
+      const isSugarFreePreferred = preferences.some(pref => 
+        pref.toLowerCase().includes('sugar free') || pref.toLowerCase().includes('no sugar')
+      );
+      
+      if (isSugarFreePreferred) {
+        const sugaryItems = ['jelly', 'jam', 'pb&j', 'chocolate', 'candy', 'sugar', 'sweet', 'honey'];
+        if (sugaryItems.some(term => itemNameLower.includes(term) || itemDescLower.includes(term))) {
+          return false;
+        }
+      }
+      
+      // Check for nut-free preference (additional check beyond allergies)
+      const isNutFreePreferred = preferences.some(pref => 
+        pref.toLowerCase().includes('nut free') || pref.toLowerCase().includes('no nuts')
+      );
+      
+      if (isNutFreePreferred) {
+        const nutTerms = ['peanut', 'almond', 'cashew', 'walnut', 'pecan', 'nut', 'pb&j'];
+        if (nutTerms.some(term => itemNameLower.includes(term) || itemDescLower.includes(term))) {
+          return false;
+        }
+      }
+    }
+    
+    // If item passes all filters, include it
+    return true;
   });
 }
 
@@ -565,12 +655,12 @@ function generateLunchboxPlan(children: Child[], days: number): LunchboxPlan {
     // Get age-appropriate meal options
     const mealOptions = getAgeLevelMeals(child.age);
     
-    // Filter out allergens
-    const safeMains = filterForAllergies(mealOptions.mains, child.allergies);
-    const safeFruits = filterForAllergies(mealOptions.fruits, child.allergies);
-    const safeVegetables = filterForAllergies(mealOptions.vegetables, child.allergies);
-    const safeSnacks = filterForAllergies(mealOptions.snacks, child.allergies);
-    const safeDrinks = filterForAllergies(mealOptions.drinks, child.allergies);
+    // Filter out allergens and apply preferences
+    const safeMains = filterForAllergies(mealOptions.mains, child.allergies, child.preferences);
+    const safeFruits = filterForAllergies(mealOptions.fruits, child.allergies, child.preferences);
+    const safeVegetables = filterForAllergies(mealOptions.vegetables, child.allergies, child.preferences);
+    const safeSnacks = filterForAllergies(mealOptions.snacks, child.allergies, child.preferences);
+    const safeDrinks = filterForAllergies(mealOptions.drinks, child.allergies, child.preferences);
     
     // Generate lunches for each day
     for (let i = 0; i < days; i++) {
@@ -684,6 +774,176 @@ function generateLunchboxPlan(children: Child[], days: number): LunchboxPlan {
   return lunchboxPlan;
 }
 
+/**
+ * Generate meal plan using OpenAI API
+ */
+async function generateOpenAIMealPlan(child: Child, days: number): Promise<OpenAIMealPlanResponse> {
+  console.log('🤖 Using OpenAI to generate meal plan for:', child.name);
+  
+  // Build context based on age, preferences, and allergies
+  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].slice(0, days);
+  
+  // Create age-appropriate context
+  let ageContext = "";
+  if (child.age < 5) {
+    ageContext = `toddler (${child.age} years old) who needs smaller portions, softer foods that are easy to chew, and finger foods that are easy to handle. Safety considerations: foods should be cut into small pieces to prevent choking.`;
+  } else if (child.age < 10) {
+    ageContext = `young child (${child.age} years old) who is developing their food preferences, needs balanced nutrition for growth, and enjoys colorful, visually appealing foods.`;
+  } else if (child.age < 13) {
+    ageContext = `preteen (${child.age} years old) who is experiencing growth spurts, needs increased calories and protein, and may be developing more sophisticated food preferences.`;
+  } else {
+    ageContext = `teenager (${child.age} years old) who needs substantial nutrition to support rapid growth and high energy levels, larger portion sizes, and may be more influenced by peer food choices.`;
+  }
+
+  // Build allergy and preference context
+  const allergyContext = child.allergies.length > 0 
+    ? `has food allergies to: ${child.allergies.join(', ')}. NEVER include these allergens in any part of the meal plan.` 
+    : "has no known food allergies.";
+  
+  const preferenceContext = child.preferences.length > 0
+    ? `has the following dietary preferences: ${child.preferences.join(', ')}. You MUST respect these preferences in ALL meal components.`
+    : "has no specific dietary preferences.";
+
+  // Create prompt for the meal plan
+  const prompt = `
+    Create a healthy, balanced, and age-appropriate lunchbox meal plan for a ${ageContext}
+
+    The child ${allergyContext}
+    
+    The child ${preferenceContext}
+
+    For each day (${daysOfWeek.join(', ')}), create a lunchbox meal plan with:
+    1. A main dish (appropriate protein content, filling, and age-appropriate)
+    2. A fruit option (varied, seasonal, and cut appropriately for age)
+    3. A vegetable option (varied, colorful, and prepared appropriately for age)
+    4. A snack (reasonably healthy, satisfying, and appropriate for the child's age)
+    5. A drink recommendation
+
+    For each item, provide:
+    - Name (concise, descriptive)
+    - Brief description (1-2 sentences)
+    - Estimated calories
+    - Allergens present (if any)
+    - Approximate preparation time
+    - Simple nutritional information (protein, carbs, fat estimates)
+
+    Additionally, generate a consolidated grocery list organized by category (Fruits, Vegetables, Proteins, Grains, Dairy, Other).
+
+    Format your response as structured JSON data ONLY, with no additional text.
+  `;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: "You are a certified pediatric nutritionist specializing in creating healthy, balanced meal plans for children. Your meal plans strictly adhere to age-appropriate nutritional guidelines, portion sizes, and food safety considerations. You're especially careful about allergies and dietary preferences."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.7,
+    });
+
+    // Parse the response
+    const content = response.choices[0].message.content;
+    if (!content) {
+      throw new Error('No content in OpenAI response');
+    }
+
+    // Parse the JSON response
+    return JSON.parse(content);
+  } catch (error) {
+    console.error('Error calling OpenAI:', error);
+    throw new Error(`Failed to generate meal plan with OpenAI: ${error}`);
+  }
+}
+
+/**
+ * Convert OpenAI meal plan to our application format
+ */
+function convertOpenAIMealPlan(openAIPlan: OpenAIMealPlanResponse, child: Child): ChildLunchPlan {
+  const childPlan: ChildLunchPlan = {
+    child_name: child.name,
+    age: child.age,
+    daily_lunches: {}
+  };
+
+  // Convert each day's meal plan
+  Object.entries(openAIPlan.dailyMeals).forEach(([day, meals]: [string, OpenAIDailyMeals]) => {
+    childPlan.daily_lunches[day] = {
+      main: convertMealItem(meals.main),
+      fruit: convertMealItem(meals.fruit),
+      vegetable: convertMealItem(meals.vegetable),
+      snack: convertMealItem(meals.snack),
+      drink: convertMealItem(meals.drink)
+    };
+  });
+
+  return childPlan;
+}
+
+/**
+ * Helper to convert an individual meal item
+ */
+function convertMealItem(item: OpenAIMealItem): LunchItem {
+  return {
+    name: item.name,
+    description: item.description,
+    nutritional_info: {
+      calories: item.nutritionalInfo.calories,
+      protein: item.nutritionalInfo.protein,
+      carbs: item.nutritionalInfo.carbs,
+      fat: item.nutritionalInfo.fat
+    },
+    allergens: item.allergens || [],
+    prep_time: item.prepTime
+  };
+}
+
+/**
+ * Generate a lunchbox plan based on children's info using OpenAI
+ */
+async function generateLunchboxPlanWithAI(children: Child[], days: number): Promise<LunchboxPlan> {
+  const lunchboxPlan: LunchboxPlan = {
+    children: [],
+    grocery_list: {}
+  };
+  
+  // Generate meal plans for each child using OpenAI
+  for (const child of children) {
+    const openAIPlan = await generateOpenAIMealPlan(child, days);
+    const childPlan = convertOpenAIMealPlan(openAIPlan, child);
+    
+    // Add child's plan to overall plan
+    lunchboxPlan.children.push(childPlan);
+    
+    // Use OpenAI's grocery list
+    if (openAIPlan.groceryList) {
+      // Merge the grocery lists
+      Object.entries(openAIPlan.groceryList).forEach(([category, items]: [string, string[]]) => {
+        if (!lunchboxPlan.grocery_list[category]) {
+          lunchboxPlan.grocery_list[category] = [];
+        }
+        
+        // Add unique items
+        items.forEach((item: string) => {
+          if (!lunchboxPlan.grocery_list[category].includes(item)) {
+            lunchboxPlan.grocery_list[category].push(item);
+          }
+        });
+      });
+    }
+  }
+  
+  return lunchboxPlan;
+}
+
+// Keep the original functions but modify the POST handler
 export async function POST(request: NextRequest) {
   console.log('📣 API endpoint /api/generate-lunchbox-plan called');
   
@@ -709,10 +969,26 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Generate lunchbox plan
-    console.log('🔄 Generating lunchbox plan...');
-    const lunchboxPlan = generateLunchboxPlan(requestData.children, requestData.days);
-    console.log('✅ Lunchbox plan generated successfully');
+    // Generate lunchbox plan using OpenAI
+    console.log('🔄 Generating AI-powered lunchbox plan...');
+    let lunchboxPlan;
+    
+    try {
+      // Try to use OpenAI if API key is available
+      if (process.env.OPENAI_API_KEY) {
+        lunchboxPlan = await generateLunchboxPlanWithAI(requestData.children, requestData.days);
+        console.log('✅ AI-powered lunchbox plan generated successfully');
+      } else {
+        // Fall back to algorithm-based plan if no API key
+        console.log('⚠️ No OpenAI API key found, falling back to algorithm-based plan generation');
+        lunchboxPlan = generateLunchboxPlan(requestData.children, requestData.days);
+        console.log('✅ Algorithm-based lunchbox plan generated successfully');
+      }
+    } catch (error) {
+      console.error('❌ Error with AI generation, falling back to algorithm:', error);
+      lunchboxPlan = generateLunchboxPlan(requestData.children, requestData.days);
+      console.log('✅ Fallback lunchbox plan generated successfully');
+    }
     
     // Return response
     return NextResponse.json(lunchboxPlan);

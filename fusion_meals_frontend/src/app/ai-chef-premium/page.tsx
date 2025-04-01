@@ -13,10 +13,27 @@ import LockIcon from '@mui/icons-material/Lock';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import ScienceIcon from '@mui/icons-material/Science';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ArrowRightIcon from '@mui/icons-material/ArrowRight';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import List from '@mui/material/List';
+import TableContainer from '@mui/material/TableContainer';
+import Table from '@mui/material/Table';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import TableCell from '@mui/material/TableCell';
+import TableBody from '@mui/material/TableBody';
+import Tooltip from '@mui/material/Tooltip';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
 
 // Interface for the request types
 interface AIChefRequest {
-  request_type: 'meal_plan' | 'cooking_guidance' | 'ingredient_sourcing' | 'recipe_curation' | 'student_meals';
+  request_type: 'meal_plan' | 'cooking_guidance' | 'ingredient_sourcing' | 'recipe_curation' | 'student_meals' | 'health_optimization';
   recipe_text?: string;
   occasion?: string;
   timeframe?: string;
@@ -30,6 +47,11 @@ interface AIChefRequest {
   cooking_skill?: string;
   prep_time_limit?: string;
   dietary_preference?: string;
+  // New fields for health optimization
+  health_goals?: string[];
+  activity_level?: string;
+  health_conditions?: string[];
+  meal_plan_data?: string; // JSON stringified meal plan data for analysis
 }
 
 // Interface for the premium content response
@@ -77,6 +99,58 @@ interface StudentMealsOptions {
   kitchen_equipment: string;
   cooking_skill: string;
   dietary_preference: string;
+}
+
+// Add interface for health optimization options
+interface HealthOptimizationOptions {
+  health_goals: string[];
+  activity_level: string;
+  health_conditions: string[];
+  meal_plan_data: string;
+}
+
+// Add interface for health optimization content/response
+interface HealthOptimizationContent {
+  overall_analysis: {
+    health_score: number; // 0-100 score
+    strengths: string[];
+    improvement_areas: string[];
+  };
+  goal_alignment: {
+    goal: string;
+    alignment_score: number; // 0-100 score
+    analysis: string;
+    recommendations: string[];
+  }[];
+  nutrient_analysis: {
+    excesses: {
+      nutrient: string;
+      current_amount: string;
+      recommended_amount: string;
+      impact: string;
+    }[];
+    deficiencies: {
+      nutrient: string;
+      current_amount: string;
+      recommended_amount: string;
+      food_sources: string[];
+    }[];
+    balanced_nutrients: string[];
+  };
+  meal_optimizations: {
+    meal_type: string;
+    current_meal: string;
+    suggested_improvements: {
+      component: string;
+      suggestion: string;
+      benefit: string;
+    }[];
+  }[];
+  scientific_insights: {
+    topic: string;
+    explanation: string;
+    citation: string;
+  }[];
 }
 
 // Interfaces for meal plan content structure
@@ -180,7 +254,7 @@ interface MicronutrientRequest {
 
 export default function AIChefPremium() {
   // State for handling the form and responses
-  const [requestType, setRequestType] = useState<'meal_plan' | 'cooking_guidance' | 'ingredient_sourcing' | 'recipe_curation' | 'student_meals'>('meal_plan');
+  const [requestType, setRequestType] = useState<'meal_plan' | 'cooking_guidance' | 'ingredient_sourcing' | 'recipe_curation' | 'student_meals' | 'health_optimization'>('meal_plan');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [subscriptionError, setSubscriptionError] = useState<boolean>(false);
@@ -219,6 +293,14 @@ export default function AIChefPremium() {
     dietary_preference: '',
   });
   
+  // New state for health optimization options
+  const [healthOptimizationOptions, setHealthOptimizationOptions] = useState<HealthOptimizationOptions>({
+    health_goals: ['balanced_nutrition'],
+    activity_level: 'moderate',
+    health_conditions: [],
+    meal_plan_data: '',
+  });
+  
   // Response state
   const [response, setResponse] = useState<AIChefResponse | null>(null);
   
@@ -251,8 +333,16 @@ export default function AIChefPremium() {
     setStudentMealsOptions({ ...studentMealsOptions, [prop]: event.target.value });
   };
   
+  // Add handler for health optimization options changes
+  const handleHealthOptimizationOptionsChange = (prop: keyof HealthOptimizationOptions) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    setHealthOptimizationOptions({
+      ...healthOptimizationOptions,
+      [prop]: event.target.value,
+    });
+  };
+  
   // Handle request type change
-  const handleRequestTypeChange = (event: React.SyntheticEvent, newValue: 'meal_plan' | 'cooking_guidance' | 'ingredient_sourcing' | 'recipe_curation' | 'student_meals') => {
+  const handleRequestTypeChange = (event: React.SyntheticEvent, newValue: 'meal_plan' | 'cooking_guidance' | 'ingredient_sourcing' | 'recipe_curation' | 'student_meals' | 'health_optimization') => {
     setRequestType(newValue);
   };
   
@@ -295,6 +385,12 @@ export default function AIChefPremium() {
           break;
         case 'student_meals':
           requestObj = { ...requestObj, ...studentMealsOptions };
+          break;
+        case 'health_optimization':
+          requestObj.health_goals = healthOptimizationOptions.health_goals;
+          requestObj.activity_level = healthOptimizationOptions.activity_level;
+          requestObj.health_conditions = healthOptimizationOptions.health_conditions;
+          requestObj.meal_plan_data = healthOptimizationOptions.meal_plan_data;
           break;
       }
       
@@ -649,6 +745,205 @@ export default function AIChefPremium() {
               </Typography>
             </Box>
           </Box>
+        );
+        
+      case 'health_optimization':
+        return (
+          <React.Fragment>
+            <Typography variant="h6" gutterBottom color="primary">
+              Advanced Health Optimization
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Analyze your meal plans against specific health goals and get personalized recommendations for optimization.
+              Our AI nutritionist will provide scientific insights tailored to your needs.
+            </Typography>
+            
+            <Paper sx={{ p: 3, mb: 3, bgcolor: '#f8f8f8' }}>
+              <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
+                Step 1: Select your primary health goals
+              </Typography>
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                {[
+                  { value: 'weight_management', label: 'Weight Management' },
+                  { value: 'muscle_building', label: 'Muscle Building' },
+                  { value: 'heart_health', label: 'Heart Health' },
+                  { value: 'gut_health', label: 'Gut Health' },
+                  { value: 'energy_optimization', label: 'Energy Optimization' },
+                  { value: 'immune_support', label: 'Immune Support' },
+                  { value: 'mental_clarity', label: 'Mental Clarity' },
+                  { value: 'balanced_nutrition', label: 'Balanced Nutrition' }
+                ].map((goal) => (
+                  <Grid item xs={6} sm={4} md={3} key={goal.value}>
+                    <Chip
+                      label={goal.label}
+                      onClick={() => {
+                        const updatedGoals = [...healthOptimizationOptions.health_goals];
+                        if (updatedGoals.includes(goal.value)) {
+                          const index = updatedGoals.indexOf(goal.value);
+                          updatedGoals.splice(index, 1);
+                        } else {
+                          updatedGoals.push(goal.value);
+                        }
+                        setHealthOptimizationOptions({
+                          ...healthOptimizationOptions,
+                          health_goals: updatedGoals,
+                        });
+                      }}
+                      color={healthOptimizationOptions.health_goals.includes(goal.value) ? 'primary' : 'default'}
+                      variant={healthOptimizationOptions.health_goals.includes(goal.value) ? 'filled' : 'outlined'}
+                      sx={{ width: '100%' }}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+              
+              <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
+                Step 2: Select your activity level
+              </Typography>
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                {[
+                  { value: 'sedentary', label: 'Sedentary (little exercise)' },
+                  { value: 'light', label: 'Light (exercise 1-3 days/week)' },
+                  { value: 'moderate', label: 'Moderate (exercise 3-5 days/week)' },
+                  { value: 'active', label: 'Very Active (exercise 6-7 days/week)' },
+                  { value: 'extra_active', label: 'Extra Active (physical job & exercise)' }
+                ].map((level) => (
+                  <Grid item xs={12} sm={6} md={4} key={level.value}>
+                    <Chip
+                      label={level.label}
+                      onClick={() => {
+                        setHealthOptimizationOptions({
+                          ...healthOptimizationOptions,
+                          activity_level: level.value,
+                        });
+                      }}
+                      color={healthOptimizationOptions.activity_level === level.value ? 'primary' : 'default'}
+                      variant={healthOptimizationOptions.activity_level === level.value ? 'filled' : 'outlined'}
+                      sx={{ width: '100%' }}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+              
+              <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
+                Step 3: Add any health conditions (optional)
+              </Typography>
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                {[
+                  { value: 'diabetes', label: 'Diabetes Type 2' },
+                  { value: 'hypertension', label: 'Hypertension' },
+                  { value: 'high_cholesterol', label: 'High Cholesterol' },
+                  { value: 'ibs', label: 'Irritable Bowel Syndrome' },
+                  { value: 'celiac', label: 'Celiac Disease' },
+                  { value: 'gerd', label: 'GERD/Acid Reflux' },
+                  { value: 'arthritis', label: 'Arthritis' },
+                  { value: 'none', label: 'None' }
+                ].map((condition) => (
+                  <Grid item xs={6} sm={4} md={3} key={condition.value}>
+                    <Chip
+                      label={condition.label}
+                      onClick={() => {
+                        if (condition.value === 'none') {
+                          // If "None" is selected, clear all health conditions
+                          setHealthOptimizationOptions({
+                            ...healthOptimizationOptions,
+                            health_conditions: [],
+                          });
+                        } else {
+                          const updatedConditions = [...healthOptimizationOptions.health_conditions];
+                          if (updatedConditions.includes(condition.value)) {
+                            const index = updatedConditions.indexOf(condition.value);
+                            updatedConditions.splice(index, 1);
+                          } else {
+                            updatedConditions.push(condition.value);
+                          }
+                          setHealthOptimizationOptions({
+                            ...healthOptimizationOptions,
+                            health_conditions: updatedConditions,
+                          });
+                        }
+                      }}
+                      color={
+                        condition.value === 'none' 
+                          ? (healthOptimizationOptions.health_conditions.length === 0 ? 'primary' : 'default')
+                          : (healthOptimizationOptions.health_conditions.includes(condition.value) ? 'primary' : 'default')
+                      }
+                      variant={
+                        condition.value === 'none'
+                          ? (healthOptimizationOptions.health_conditions.length === 0 ? 'filled' : 'outlined')
+                          : (healthOptimizationOptions.health_conditions.includes(condition.value) ? 'filled' : 'outlined')
+                      }
+                      sx={{ width: '100%' }}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+              
+              <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
+                Step 4: Enter your meal plan information for analysis
+              </Typography>
+              <TextField
+                label="Paste your meal plan details here"
+                multiline
+                rows={6}
+                value={healthOptimizationOptions.meal_plan_data}
+                onChange={(e) => setHealthOptimizationOptions({
+                  ...healthOptimizationOptions,
+                  meal_plan_data: e.target.value,
+                })}
+                fullWidth
+                placeholder="Enter meals for analysis. For best results, include information about breakfast, lunch, dinner, and snacks with approximate quantities."
+                helperText="Example: 'Breakfast: 2 scrambled eggs with spinach, whole grain toast, coffee. Lunch: Grilled chicken salad with mixed greens, cherry tomatoes, avocado. Dinner: Salmon with quinoa and roasted broccoli.'"
+              />
+              
+              <Box sx={{ mt: 2, mb: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Or analyze your last generated meal plan:
+                </Typography>
+                <Button 
+                  variant="outlined" 
+                  color="primary"
+                  sx={{ mt: 1 }}
+                  onClick={() => {
+                    // If there's a meal plan in state, use it for analysis
+                    const mealPlanContent = response?.premium_content as unknown as MealPlanContent;
+                    if (mealPlanContent?.meal_plan?.days) {
+                      const mealPlanText = mealPlanContent.meal_plan.days.map(day => {
+                        return `${day.day}:\n` +
+                          `Breakfast: ${day.breakfast.name} - ${day.breakfast.description}\n` +
+                          `Lunch: ${day.lunch.name} - ${day.lunch.description}\n` +
+                          `Dinner: ${day.dinner.name} - ${day.dinner.description}\n` +
+                          `Snacks: ${day.snacks.map(s => s.name).join(', ')}`;
+                      }).join('\n\n');
+                      
+                      setHealthOptimizationOptions({
+                        ...healthOptimizationOptions,
+                        meal_plan_data: mealPlanText,
+                      });
+                    }
+                  }}
+                >
+                  Use Last Generated Meal Plan
+                </Button>
+              </Box>
+            </Paper>
+            
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+              <Button
+                variant="contained"
+                color="primary"
+                disabled={!healthOptimizationOptions.meal_plan_data || healthOptimizationOptions.health_goals.length === 0}
+                onClick={handleSubmit}
+                startIcon={<ScienceIcon />}
+              >
+                Analyze and Optimize
+              </Button>
+              <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
+                <LockIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
+                Premium Feature
+              </Typography>
+            </Box>
+          </React.Fragment>
         );
         
       default:
@@ -2272,6 +2567,278 @@ export default function AIChefPremium() {
           </Box>
         );
         
+      case 'health_optimization':
+        const healthContent = response?.premium_content as unknown as HealthOptimizationContent;
+        if (!healthContent) {
+          return <Typography>No health optimization data available</Typography>;
+        }
+        
+        return (
+          <Box>
+            <Paper elevation={3} sx={{ p: 3, mb: 4, bgcolor: '#f8fffe', border: '1px solid #e0f7fa' }}>
+              <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+                <ScienceIcon color="primary" sx={{ fontSize: 36 }} />
+                <Typography variant="h5" color="primary">Health Optimization Analysis</Typography>
+              </Stack>
+              
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="h6" gutterBottom>Overall Health Score</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Box sx={{ position: 'relative', display: 'inline-flex', mr: 2 }}>
+                    <CircularProgress
+                      variant="determinate"
+                      value={healthContent.overall_analysis.health_score}
+                      size={80}
+                      thickness={4}
+                      sx={{ color: healthContent.overall_analysis.health_score > 70 ? 'success.main' : 
+                            healthContent.overall_analysis.health_score > 40 ? 'warning.main' : 'error.main' }}
+                    />
+                    <Box
+                      sx={{
+                        top: 0,
+                        left: 0,
+                        bottom: 0,
+                        right: 0,
+                        position: 'absolute',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Typography variant="h5" component="div" color="text.secondary">
+                        {healthContent.overall_analysis.health_score}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  
+                  <Box>
+                    <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                      {healthContent.overall_analysis.health_score > 70 ? 'Excellent' : 
+                       healthContent.overall_analysis.health_score > 60 ? 'Very Good' :
+                       healthContent.overall_analysis.health_score > 50 ? 'Good' :
+                       healthContent.overall_analysis.health_score > 40 ? 'Fair' : 'Needs Improvement'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Based on your goals and nutritional profile
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+              
+              <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="h6" sx={{ mb: 1 }}>Nutritional Strengths</Typography>
+                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(76, 175, 80, 0.04)' }}>
+                    <List dense>
+                      {healthContent.overall_analysis.strengths.map((strength, index) => (
+                        <ListItem key={index} sx={{ py: 0.5 }}>
+                          <CheckCircleIcon sx={{ color: 'success.main', mr: 1 }} fontSize="small" />
+                          <ListItemText primary={strength} />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Paper>
+                </Grid>
+                
+                <Grid item xs={12} md={6}>
+                  <Typography variant="h6" sx={{ mb: 1 }}>Areas for Improvement</Typography>
+                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'rgba(255, 152, 0, 0.04)' }}>
+                    <List dense>
+                      {healthContent.overall_analysis.improvement_areas.map((area, index) => (
+                        <ListItem key={index} sx={{ py: 0.5 }}>
+                          <RefreshIcon sx={{ color: 'warning.main', mr: 1 }} fontSize="small" />
+                          <ListItemText primary={area} />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Paper>
+                </Grid>
+              </Grid>
+              
+              <Divider sx={{ my: 4 }} />
+              
+              <Typography variant="h6" gutterBottom>Goal Alignment Analysis</Typography>
+              <Box sx={{ mb: 4 }}>
+                {healthContent.goal_alignment.map((goal, index) => (
+                  <Accordion key={index} sx={{ mb: 2 }}>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                        <Typography sx={{ flexGrow: 1, fontWeight: 'medium' }}>{goal.goal}</Typography>
+                        <Chip 
+                          label={`${goal.alignment_score}%`} 
+                          size="small" 
+                          color={
+                            goal.alignment_score > 70 ? 'success' : 
+                            goal.alignment_score > 40 ? 'warning' : 'error'
+                          }
+                          sx={{ ml: 2 }}
+                        />
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <Typography paragraph>{goal.analysis}</Typography>
+                      <Typography variant="subtitle2" gutterBottom>Recommendations:</Typography>
+                      <List dense>
+                        {goal.recommendations.map((rec, recIndex) => (
+                          <ListItem key={recIndex}>
+                            <ListItemIcon sx={{ minWidth: 36 }}>
+                              <ArrowRightIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText primary={rec} />
+                          </ListItem>
+                        ))}
+                      </List>
+                    </AccordionDetails>
+                  </Accordion>
+                ))}
+              </Box>
+              
+              <Divider sx={{ my: 4 }} />
+              
+              <Typography variant="h6" gutterBottom>Nutrient Analysis</Typography>
+              <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle1" gutterBottom color="error">Nutrient Excesses</Typography>
+                  {healthContent.nutrient_analysis.excesses.length > 0 ? (
+                    <TableContainer component={Paper} variant="outlined">
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Nutrient</TableCell>
+                            <TableCell>Current</TableCell>
+                            <TableCell>Recommended</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {healthContent.nutrient_analysis.excesses.map((excess, index) => (
+                            <TableRow key={index}>
+                              <TableCell>{excess.nutrient}</TableCell>
+                              <TableCell>{excess.current_amount}</TableCell>
+                              <TableCell>{excess.recommended_amount}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">No significant excesses detected.</Typography>
+                  )}
+                </Grid>
+                
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle1" gutterBottom color="warning.main">Nutrient Deficiencies</Typography>
+                  {healthContent.nutrient_analysis.deficiencies.length > 0 ? (
+                    <TableContainer component={Paper} variant="outlined">
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Nutrient</TableCell>
+                            <TableCell>Current</TableCell>
+                            <TableCell>Recommended</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {healthContent.nutrient_analysis.deficiencies.map((deficiency, index) => (
+                            <Tooltip 
+                              key={index}
+                              title={
+                                <React.Fragment>
+                                  <Typography variant="subtitle2">Food Sources:</Typography>
+                                  <List dense>
+                                    {deficiency.food_sources.map((food, foodIndex) => (
+                                      <ListItem key={foodIndex}>
+                                        <ListItemText primary={food} />
+                                      </ListItem>
+                                    ))}
+                                  </List>
+                                </React.Fragment>
+                              }
+                            >
+                              <TableRow hover>
+                                <TableCell>{deficiency.nutrient}</TableCell>
+                                <TableCell>{deficiency.current_amount}</TableCell>
+                                <TableCell>{deficiency.recommended_amount}</TableCell>
+                              </TableRow>
+                            </Tooltip>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">No significant deficiencies detected.</Typography>
+                  )}
+                </Grid>
+              </Grid>
+              
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle1" gutterBottom color="success.main">Balanced Nutrients</Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                  {healthContent.nutrient_analysis.balanced_nutrients.map((nutrient, index) => (
+                    <Chip 
+                      key={index} 
+                      label={nutrient} 
+                      color="success" 
+                      variant="outlined" 
+                      size="small" 
+                      sx={{ mb: 1 }}
+                    />
+                  ))}
+                </Stack>
+              </Box>
+              
+              <Divider sx={{ my: 4 }} />
+              
+              <Typography variant="h6" gutterBottom>Meal Optimization Suggestions</Typography>
+              <Box sx={{ mb: 4 }}>
+                {healthContent.meal_optimizations.map((meal, index) => (
+                  <Paper key={index} variant="outlined" sx={{ p: 2, mb: 2 }}>
+                    <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
+                      {meal.meal_type}
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      Current: {meal.current_meal}
+                    </Typography>
+                    
+                    <Typography variant="subtitle2" gutterBottom>Suggested Improvements:</Typography>
+                    <List dense>
+                      {meal.suggested_improvements.map((improvement, impIndex) => (
+                        <ListItem key={impIndex}>
+                          <ListItemIcon sx={{ minWidth: 36 }}>
+                            <SwapHorizIcon fontSize="small" color="primary" />
+                          </ListItemIcon>
+                          <ListItemText 
+                            primary={`${improvement.component}: ${improvement.suggestion}`}
+                            secondary={improvement.benefit} 
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Paper>
+                ))}
+              </Box>
+              
+              <Divider sx={{ my: 4 }} />
+              
+              <Typography variant="h6" gutterBottom>Scientific Insights</Typography>
+              <Box sx={{ mb: 2 }}>
+                {healthContent.scientific_insights.map((insight, index) => (
+                  <Paper key={index} variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'rgba(3, 169, 244, 0.04)' }}>
+                    <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
+                      {insight.topic}
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      {insight.explanation}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Source: {insight.citation}
+                    </Typography>
+                  </Paper>
+                ))}
+              </Box>
+            </Paper>
+          </Box>
+        );
+        
       default:
         return (
           <Box sx={{ mt: 4 }}>
@@ -2601,6 +3168,12 @@ export default function AIChefPremium() {
           <Tab icon={<ShoppingBasketIcon />} label="Ingredient Sourcing" value="ingredient_sourcing" />
           <Tab icon={<MenuBookIcon />} label="Recipe Curation" value="recipe_curation" />
           <Tab icon={<MenuBookIcon />} label="Student Meals" value="student_meals" />
+          <Tab
+            icon={<ScienceIcon />}
+            label="Health Optimization"
+            value="health_optimization"
+            sx={{ flexGrow: 1 }}
+          />
         </Tabs>
       </Box>
       

@@ -48,7 +48,7 @@ class PremiumUserUpdate(BaseModel):
     preferences: Optional[UserPreferences] = None
 
 class AIChefRequest(BaseModel):
-    request_type: str  # "meal_plan", "cooking_guidance", "ingredient_sourcing", "recipe_curation", "student_meals"
+    request_type: str  # "meal_plan", "cooking_guidance", "ingredient_sourcing", "recipe_curation", "student_meals", "health_optimization"
     recipe_text: Optional[str] = None
     occasion: Optional[str] = None
     timeframe: Optional[str] = None
@@ -63,6 +63,11 @@ class AIChefRequest(BaseModel):
     cooking_skill: Optional[str] = None
     prep_time_limit: Optional[str] = None
     dietary_preference: Optional[str] = None
+    # New fields for health optimization
+    health_goals: Optional[List[str]] = None
+    activity_level: Optional[str] = None
+    health_conditions: Optional[List[str]] = None
+    meal_plan_data: Optional[str] = None
 
 class AIChefResponse(BaseModel):
     premium_content: Dict[str, Any]
@@ -130,6 +135,8 @@ async def ai_personal_chef(req: AIChefRequest, user_data: Optional[Dict] = Depen
         prompt = generate_recipe_curation_prompt(req, user_preferences)
     elif req.request_type == "student_meals":
         prompt = generate_student_meals_prompt(req, user_preferences)
+    elif req.request_type == "health_optimization":
+        prompt = generate_health_optimization_prompt(req, user_preferences)
     else:
         raise HTTPException(status_code=400, detail="Invalid request type")
     
@@ -919,5 +926,169 @@ def generate_micronutrient_analysis_prompt(req: MicronutrientAnalysisRequest, us
     Return your analysis as a JSON object with a 'micronutrients' field containing all this information.
     Make sure your response is accurate based on the actual food components in the meals.
     """
+    
+    return prompt
+
+def generate_health_optimization_prompt(req: AIChefRequest, user_preferences: Dict) -> str:
+    """
+    Generate a prompt for health optimization analysis based on meal plan data
+    and specific health goals/conditions.
+    """
+    # Extract relevant data from the request
+    meal_plan_data = req.meal_plan_data or ""
+    health_goals = req.health_goals or ["balanced_nutrition"]
+    activity_level = req.activity_level or "moderate"
+    health_conditions = req.health_conditions or []
+    
+    # Extract relevant user preferences
+    dietary_restrictions = user_preferences.get("dietary_restrictions", [])
+    favorite_ingredients = user_preferences.get("favorite_ingredients", [])
+    disliked_ingredients = user_preferences.get("disliked_ingredients", [])
+    
+    # Map health goals to descriptive text
+    health_goal_descriptions = {
+        "weight_management": "managing weight through balanced nutrition and appropriate portion sizes",
+        "muscle_building": "supporting muscle development and repair with adequate protein and nutrients",
+        "heart_health": "promoting cardiovascular health through balanced nutrition and heart-friendly foods",
+        "gut_health": "supporting digestive health and maintaining a healthy gut microbiome",
+        "energy_optimization": "maximizing sustained energy levels throughout the day",
+        "immune_support": "strengthening the immune system through nutrient-rich foods",
+        "mental_clarity": "supporting cognitive function and mental performance",
+        "balanced_nutrition": "achieving overall balanced nutrition across all food groups and nutrients"
+    }
+    
+    # Map activity levels to descriptive text
+    activity_level_descriptions = {
+        "sedentary": "little to no regular exercise",
+        "light": "light exercise 1-3 days per week",
+        "moderate": "moderate exercise 3-5 days per week",
+        "active": "active exercise 6-7 days per week",
+        "extra_active": "very intense daily exercise or physical job"
+    }
+    
+    # Map health conditions to nutritional considerations
+    health_condition_considerations = {
+        "diabetes": "blood sugar management, consistent carbohydrate intake, emphasis on complex carbs and fiber",
+        "hypertension": "sodium reduction, emphasis on potassium-rich foods, heart-healthy eating patterns",
+        "high_cholesterol": "reduced saturated fat, increased soluble fiber, heart-healthy fat sources",
+        "ibs": "potential trigger food avoidance, fiber management, regular meal pattern",
+        "celiac": "strict gluten avoidance, focus on naturally gluten-free grains and foods",
+        "gerd": "avoidance of trigger foods, smaller meals, limiting acidic foods",
+        "arthritis": "anti-inflammatory foods, omega-3 rich options, antioxidant-rich produce"
+    }
+    
+    # Create comprehensive system prompt
+    system_prompt = f"""You are an expert nutritionist and health optimization specialist with advanced understanding of nutrition science, biochemistry, and personalized dietary approaches. 
+    Your task is to analyze the provided meal plan and offer detailed, evidence-based recommendations for optimization.
+    
+    Present your analysis and recommendations in a structured, clear format with a professional yet accessible tone. 
+    Include specific, actionable advice backed by nutritional science. Your goal is to help the user optimize their meals for their specific health goals.
+    
+    IMPORTANT: Format your response as a structured JSON object matching the HealthOptimizationContent interface."""
+    
+    # Build the comprehensive user prompt
+    prompt = f"""
+    Please analyze the following meal plan data and provide a comprehensive health optimization report based on the specified parameters.
+    
+    MEAL PLAN DATA:
+    {meal_plan_data}
+    
+    HEALTH GOALS:
+    {', '.join([health_goal_descriptions.get(goal, goal) for goal in health_goals])}
+    
+    ACTIVITY LEVEL:
+    {activity_level_descriptions.get(activity_level, activity_level)}
+    
+    HEALTH CONDITIONS:
+    {', '.join([health_condition_considerations.get(condition, condition) for condition in health_conditions]) if health_conditions else "None specified"}
+    
+    DIETARY PREFERENCES:
+    - Restrictions: {', '.join(dietary_restrictions) if dietary_restrictions else "None specified"}
+    - Favorite ingredients: {', '.join(favorite_ingredients) if favorite_ingredients else "None specified"}
+    - Disliked ingredients: {', '.join(disliked_ingredients) if disliked_ingredients else "None specified"}
+    
+    Please provide a detailed health optimization report with the following sections:
+    
+    1. Overall Analysis:
+       - Calculate a health score (0-100) based on nutritional completeness, alignment with health goals, and adherence to condition-specific requirements
+       - Identify 3-5 key nutritional strengths in the meal plan
+       - Highlight 3-5 specific areas for improvement
+    
+    2. Goal Alignment Analysis:
+       - For each health goal, provide a specific analysis of how well the meal plan aligns
+       - Calculate an alignment score (0-100) for each goal
+       - Provide 2-4 specific, actionable recommendations to better align with each goal
+    
+    3. Nutrient Analysis:
+       - Identify any nutrient excesses and provide current vs. recommended amounts
+       - Identify any nutrient deficiencies with current vs. recommended amounts and specific food sources to address them
+       - List nutrients that are appropriately balanced
+    
+    4. Meal-by-Meal Optimization:
+       - Analyze each meal type (breakfast, lunch, dinner, snacks) and suggest specific improvements
+       - For each suggestion, explain the specific health benefit
+       - Ensure suggestions maintain food preferences and respect dietary restrictions
+    
+    5. Scientific Insights:
+       - Provide 2-3 evidence-based insights relevant to the specified health goals
+       - Include brief explanations and scientific citations
+       - Focus on practical applications rather than theory
+    
+    Format your response as a structured JSON object following this exact structure:
+    
+    {{
+      "overall_analysis": {{
+        "health_score": number, // 0-100 score
+        "strengths": string[], // Array of strength descriptions
+        "improvement_areas": string[] // Array of improvement descriptions
+      }},
+      "goal_alignment": [
+        {{
+          "goal": string, // Name of the goal
+          "alignment_score": number, // 0-100 score
+          "analysis": string, // Detailed analysis paragraph
+          "recommendations": string[] // Array of recommendation descriptions
+        }}
+      ],
+      "nutrient_analysis": {{
+        "excesses": [
+          {{
+            "nutrient": string, // Name of nutrient
+            "current_amount": string, // Current amount with units
+            "recommended_amount": string, // Recommended amount with units
+            "impact": string // Brief description of potential impact
+          }}
+        ],
+        "deficiencies": [
+          {{
+            "nutrient": string, // Name of nutrient
+            "current_amount": string, // Current amount with units
+            "recommended_amount": string, // Recommended amount with units
+            "food_sources": string[] // Array of good food sources
+          }}
+        ],
+        "balanced_nutrients": string[] // Array of balanced nutrient names
+      }},
+      "meal_optimizations": [
+        {{
+          "meal_type": string, // "Breakfast", "Lunch", "Dinner", or "Snacks"
+          "current_meal": string, // Current meal description
+          "suggested_improvements": [
+            {{
+              "component": string, // Component to change
+              "suggestion": string, // Specific suggestion
+              "benefit": string // Health benefit explanation
+            }}
+          ]
+        }}
+      ],
+      "scientific_insights": [
+        {{
+          "topic": string, // Brief topic description
+          "explanation": string, // Detailed explanation
+          "citation": string // Scientific citation
+        }}
+      ]
+    }}"""
     
     return prompt 

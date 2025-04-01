@@ -17,9 +17,13 @@ import {
   Grid,
   Paper,
   Tab,
-  Tabs
+  Tabs,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle
 } from "@mui/material";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Edit2, RotateCw } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 interface Child {
@@ -57,6 +61,13 @@ interface LunchboxPlan {
     daily_lunches: Record<string, DailyLunch>;
   }[];
   grocery_list: Record<string, string[]>;
+}
+
+interface SavedMealPlan {
+  id: string;
+  name: string;
+  date: string;
+  plan: LunchboxPlan;
 }
 
 // Common age options
@@ -104,6 +115,203 @@ const defaultChild: Child = {
   allergies: [],
 };
 
+// Add the missing type definition and state for editingMeal
+type EditingMealInfo = {
+  childIndex: number;
+  day: string;
+  mealType: keyof DailyLunch;
+} | null;
+
+// Add the meal alternatives data
+// Define common alternative meal options 
+const mealAlternatives: Record<keyof DailyLunch, LunchItem[]> = {
+  main: [
+    {
+      name: "Hummus & Veggie Wrap",
+      description: "Whole grain tortilla with hummus and colorful vegetables.",
+      nutritional_info: { calories: 250, protein: "8g", carbs: "35g", fat: "10g" },
+      allergens: ["wheat"],
+      prep_time: "5 mins"
+    },
+    {
+      name: "Cream Cheese & Cucumber Sandwich",
+      description: "Whole grain bread with cream cheese and cucumber slices.",
+      nutritional_info: { calories: 220, protein: "7g", carbs: "28g", fat: "9g" },
+      allergens: ["wheat", "dairy"],
+      prep_time: "4 mins"
+    },
+    {
+      name: "Pasta Salad",
+      description: "Whole grain pasta with vegetables and light dressing.",
+      nutritional_info: { calories: 280, protein: "8g", carbs: "45g", fat: "8g" },
+      allergens: ["wheat"],
+      prep_time: "15 mins (can prep night before)"
+    },
+    {
+      name: "Bean & Rice Bowl",
+      description: "Protein-rich beans with brown rice and mild seasonings.",
+      nutritional_info: { calories: 300, protein: "12g", carbs: "50g", fat: "5g" },
+      allergens: [],
+      prep_time: "10 mins (can prep night before)"
+    },
+    {
+      name: "Sunbutter & Jam Sandwich",
+      description: "Sunflower seed butter with fruit jam on whole grain bread.",
+      nutritional_info: { calories: 260, protein: "8g", carbs: "32g", fat: "12g" },
+      allergens: ["wheat"],
+      prep_time: "3 mins"
+    }
+  ],
+  fruit: [
+    {
+      name: "Apple Slices",
+      description: "Fresh, crunchy apple slices.",
+      nutritional_info: { calories: 70, protein: "0g", carbs: "19g", fat: "0g" },
+      allergens: [],
+      prep_time: "2 mins"
+    },
+    {
+      name: "Berries Mix",
+      description: "Assorted berries (strawberries, blueberries, raspberries).",
+      nutritional_info: { calories: 50, protein: "1g", carbs: "12g", fat: "0g" },
+      allergens: [],
+      prep_time: "1 min"
+    },
+    {
+      name: "Orange Segments",
+      description: "Sweet orange pieces, perfect for small hands.",
+      nutritional_info: { calories: 60, protein: "1g", carbs: "15g", fat: "0g" },
+      allergens: [],
+      prep_time: "3 mins"
+    },
+    {
+      name: "Grapes",
+      description: "Sweet, bite-sized grapes (cut for younger children).",
+      nutritional_info: { calories: 60, protein: "1g", carbs: "15g", fat: "0g" },
+      allergens: [],
+      prep_time: "2 mins"
+    },
+    {
+      name: "Banana",
+      description: "Potassium-rich banana (whole or sliced).",
+      nutritional_info: { calories: 90, protein: "1g", carbs: "23g", fat: "0g" },
+      allergens: [],
+      prep_time: "1 min"
+    }
+  ],
+  vegetable: [
+    {
+      name: "Carrot Sticks",
+      description: "Crunchy, sweet carrot sticks.",
+      nutritional_info: { calories: 30, protein: "1g", carbs: "7g", fat: "0g" },
+      allergens: [],
+      prep_time: "3 mins"
+    },
+    {
+      name: "Cucumber Slices",
+      description: "Refreshing cucumber rounds.",
+      nutritional_info: { calories: 15, protein: "1g", carbs: "3g", fat: "0g" },
+      allergens: [],
+      prep_time: "2 mins"
+    },
+    {
+      name: "Bell Pepper Strips",
+      description: "Colorful bell pepper strips (red, yellow, orange).",
+      nutritional_info: { calories: 25, protein: "1g", carbs: "6g", fat: "0g" },
+      allergens: [],
+      prep_time: "3 mins"
+    },
+    {
+      name: "Cherry Tomatoes",
+      description: "Sweet cherry tomatoes (halved for younger children).",
+      nutritional_info: { calories: 20, protein: "1g", carbs: "4g", fat: "0g" },
+      allergens: [],
+      prep_time: "2 mins"
+    },
+    {
+      name: "Sugar Snap Peas",
+      description: "Naturally sweet, crunchy snap peas.",
+      nutritional_info: { calories: 35, protein: "2g", carbs: "6g", fat: "0g" },
+      allergens: [],
+      prep_time: "1 min"
+    }
+  ],
+  snack: [
+    {
+      name: "Greek Yogurt",
+      description: "Creamy Greek yogurt with protein.",
+      nutritional_info: { calories: 120, protein: "15g", carbs: "9g", fat: "0g" },
+      allergens: ["dairy"],
+      prep_time: "1 min"
+    },
+    {
+      name: "Cheese Stick",
+      description: "Individually wrapped cheese stick.",
+      nutritional_info: { calories: 80, protein: "7g", carbs: "1g", fat: "6g" },
+      allergens: ["dairy"],
+      prep_time: "0 mins"
+    },
+    {
+      name: "Veggie Chips",
+      description: "Crunchy vegetable-based chips.",
+      nutritional_info: { calories: 130, protein: "2g", carbs: "15g", fat: "6g" },
+      allergens: [],
+      prep_time: "0 mins"
+    },
+    {
+      name: "Rice Cakes",
+      description: "Light, crunchy rice cakes.",
+      nutritional_info: { calories: 60, protein: "1g", carbs: "13g", fat: "0g" },
+      allergens: [],
+      prep_time: "0 mins"
+    },
+    {
+      name: "Hummus Cup",
+      description: "Small portion of hummus for dipping.",
+      nutritional_info: { calories: 70, protein: "3g", carbs: "8g", fat: "3g" },
+      allergens: [],
+      prep_time: "1 min"
+    }
+  ],
+  drink: [
+    {
+      name: "Water",
+      description: "Hydrating water in a reusable bottle.",
+      nutritional_info: { calories: 0, protein: "0g", carbs: "0g", fat: "0g" },
+      allergens: [],
+      prep_time: "1 min"
+    },
+    {
+      name: "Milk",
+      description: "Calcium-rich milk.",
+      nutritional_info: { calories: 90, protein: "8g", carbs: "12g", fat: "2g" },
+      allergens: ["dairy"],
+      prep_time: "1 min"
+    },
+    {
+      name: "Plant Milk",
+      description: "Dairy-free plant-based milk alternative.",
+      nutritional_info: { calories: 80, protein: "4g", carbs: "10g", fat: "4g" },
+      allergens: [],
+      prep_time: "1 min"
+    },
+    {
+      name: "Diluted Juice",
+      description: "Fruit juice mixed with water (less sugar).",
+      nutritional_info: { calories: 45, protein: "0g", carbs: "11g", fat: "0g" },
+      allergens: [],
+      prep_time: "1 min"
+    },
+    {
+      name: "Smoothie",
+      description: "Fruit and yogurt smoothie in a small container.",
+      nutritional_info: { calories: 120, protein: "5g", carbs: "20g", fat: "3g" },
+      allergens: ["dairy"],
+      prep_time: "5 mins"
+    }
+  ]
+};
+
 export default function LunchboxPlannerPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [lunchboxPlan, setLunchboxPlan] = useState<LunchboxPlan | null>(null);
@@ -118,6 +326,16 @@ export default function LunchboxPlannerPage() {
   // Days state
   const [selectedDays, setSelectedDays] = useState<number>(5);
   
+  // Meal editing state
+  const [editingMeal, setEditingMeal] = useState<EditingMealInfo>(null);
+  
+  // These variables are currently unused but kept for future save/load meal plan functionality
+  // They will be used in a later implementation phase
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  const [savedPlans, setSavedPlans] = useState<SavedMealPlan[]>([]);
+  const [savePlanName, setSavePlanName] = useState("");
+  /* eslint-enable @typescript-eslint/no-unused-vars */
+
   // Handler for tab changes
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -349,7 +567,407 @@ export default function LunchboxPlannerPage() {
     toast.success("Generated test lunchbox plan (mock data - API unavailable)");
   };
 
-  // Render the Input Form
+  // Add handlers for meal editing
+  const handleEditMeal = (childIndex: number, day: string, mealType: keyof DailyLunch) => {
+    setEditingMeal({ childIndex, day, mealType });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMeal(null);
+  };
+
+  const handleSaveEdit = (childIndex: number, day: string, mealType: keyof DailyLunch, newMeal: LunchItem) => {
+    if (!lunchboxPlan) return;
+    
+    // Create a deep copy of the lunchbox plan
+    const updatedPlan = JSON.parse(JSON.stringify(lunchboxPlan)) as LunchboxPlan;
+    
+    // Update the specific meal
+    updatedPlan.children[childIndex].daily_lunches[day][mealType] = newMeal;
+    
+    // Update the state
+    setLunchboxPlan(updatedPlan);
+    setEditingMeal(null);
+    toast.success(`${mealType.charAt(0).toUpperCase() + mealType.slice(1)} updated successfully!`);
+  };
+
+  // Add the function to randomize a specific meal
+  const handleRandomizeMeal = (childIndex: number, day: string, mealType: keyof DailyLunch) => {
+    if (!lunchboxPlan) return;
+    
+    // Get currently displayed meal
+    const currentMeal = lunchboxPlan.children[childIndex].daily_lunches[day][mealType];
+    
+    // Get child info to filter alternatives properly
+    const child = {
+      name: lunchboxPlan.children[childIndex].child_name,
+      age: lunchboxPlan.children[childIndex].age,
+      preferences: [], // Not available in the result, so assuming empty
+      allergies: [] // Not available in the result, so assuming empty
+    };
+    
+    // Get filtered alternatives
+    const alternatives = getFilteredAlternatives(mealType, child, currentMeal);
+    
+    if (alternatives.length === 0) {
+      toast.error("No suitable alternatives found based on preferences and allergies");
+      return;
+    }
+    
+    // Pick a random alternative
+    const randomIndex = Math.floor(Math.random() * alternatives.length);
+    const randomMeal = alternatives[randomIndex];
+    
+    // Apply the change
+    handleSaveEdit(childIndex, day, mealType, randomMeal);
+  };
+
+  // Function to generate a grocery list from the meal plan
+  // This function is currently unused but will be needed for the grocery list update feature
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const createGroceryListFromPlan = (plan: LunchboxPlan): Record<string, string[]> => {
+    // Create grocery list object with categories
+    const groceryList: Record<string, string[]> = {
+      'Fruits': [],
+      'Vegetables': [],
+      'Grains': [],
+      'Proteins': [],
+      'Dairy': [],
+      'Snacks': [],
+      'Other': []
+    };
+    
+    // Helper to categorize items
+    const categorizeItem = (item: LunchItem) => {
+      const name = item.name.toLowerCase();
+      
+      // Simple categorization logic
+      if (name.includes('apple') || name.includes('banana') || name.includes('berry') || 
+          name.includes('fruit') || name.includes('orange') || name.includes('grape')) {
+        if (!groceryList['Fruits'].includes(item.name)) {
+          groceryList['Fruits'].push(item.name);
+        }
+      } else if (name.includes('carrot') || name.includes('cucumber') || name.includes('pepper') || 
+                name.includes('vegetable') || name.includes('tomato') || name.includes('lettuce')) {
+        if (!groceryList['Vegetables'].includes(item.name)) {
+          groceryList['Vegetables'].push(item.name);
+        }
+      } else if (name.includes('bread') || name.includes('rice') || name.includes('pasta') || 
+                name.includes('cracker') || name.includes('cereal') || name.includes('grain')) {
+        if (!groceryList['Grains'].includes(item.name)) {
+          groceryList['Grains'].push(item.name);
+        }
+      } else if (name.includes('chicken') || name.includes('beef') || name.includes('turkey') || 
+                name.includes('fish') || name.includes('protein') || name.includes('tofu')) {
+        if (!groceryList['Proteins'].includes(item.name)) {
+          groceryList['Proteins'].push(item.name);
+        }
+      } else if (name.includes('milk') || name.includes('cheese') || name.includes('yogurt') || 
+                name.includes('dairy')) {
+        if (!groceryList['Dairy'].includes(item.name)) {
+          groceryList['Dairy'].push(item.name);
+        }
+      } else if (name.includes('cracker') || name.includes('chips') || name.includes('bar') || 
+                name.includes('snack')) {
+        if (!groceryList['Snacks'].includes(item.name)) {
+          groceryList['Snacks'].push(item.name);
+        }
+      } else {
+        if (!groceryList['Other'].includes(item.name)) {
+          groceryList['Other'].push(item.name);
+        }
+      }
+    };
+    
+    // Process all lunches for all children
+    plan.children.forEach(child => {
+      Object.values(child.daily_lunches).forEach(lunch => {
+        categorizeItem(lunch.main);
+        categorizeItem(lunch.fruit);
+        categorizeItem(lunch.vegetable);
+        categorizeItem(lunch.snack);
+        // Don't include water in grocery list
+        if (lunch.drink.name.toLowerCase() !== 'water') {
+          categorizeItem(lunch.drink);
+        }
+      });
+    });
+    
+    // Remove empty categories
+    Object.keys(groceryList).forEach(category => {
+      if (groceryList[category].length === 0) {
+        delete groceryList[category];
+      }
+    });
+    
+    return groceryList;
+  };
+
+  // Function to filter meal alternatives based on preferences and allergies
+  const getFilteredAlternatives = (mealType: keyof DailyLunch, child: Child, currentMeal: LunchItem): LunchItem[] => {
+    if (!child || !mealAlternatives[mealType]) return [];
+    
+    return mealAlternatives[mealType].filter(meal => {
+      // Don't include the current meal as an alternative
+      if (meal.name === currentMeal.name) return false;
+      
+      // Check if meal contains allergens the child is allergic to
+      if (child.allergies.length > 0 && meal.allergens && meal.allergens.length > 0) {
+        const hasAllergen = meal.allergens.some(allergen => 
+          child.allergies.some(allergy => 
+            allergen.toLowerCase().includes(allergy.toLowerCase()) || 
+            allergy.toLowerCase().includes(allergen.toLowerCase())
+          )
+        );
+        if (hasAllergen) return false;
+      }
+      
+      // Check preferences (like vegetarian)
+      if (child.preferences.includes("Vegetarian")) {
+        const nonVegItems = ["chicken", "beef", "turkey", "ham", "meat", "fish", "tuna"];
+        if (nonVegItems.some(item => meal.name.toLowerCase().includes(item) || 
+                             (meal.description && meal.description.toLowerCase().includes(item)))) {
+          return false;
+        }
+      }
+      
+      // Check for vegan preference
+      if (child.preferences.includes("Vegan")) {
+        const nonVeganItems = ["dairy", "milk", "cheese", "yogurt", "chicken", "beef", "turkey", "ham", "meat", "fish", "tuna"];
+        if (nonVeganItems.some(item => meal.name.toLowerCase().includes(item) || 
+                               (meal.description && meal.description.toLowerCase().includes(item)) ||
+                               (meal.allergens && meal.allergens.includes(item)))) {
+          return false;
+        }
+      }
+      
+      // Check for gluten-free preference
+      if (child.preferences.includes("Gluten-Free")) {
+        if (meal.allergens && meal.allergens.includes("wheat")) {
+          return false;
+        }
+      }
+      
+      // Check for dairy-free preference
+      if (child.preferences.includes("Dairy-Free")) {
+        if (meal.allergens && meal.allergens.includes("dairy")) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  };
+
+  // Add the Meal Edit Dialog component
+  const renderMealEditDialog = () => {
+    if (!editingMeal || !lunchboxPlan) return null;
+    
+    const { childIndex, day, mealType } = editingMeal;
+    const child = lunchboxPlan.children[childIndex];
+    const currentMeal = child.daily_lunches[day][mealType];
+    const alternatives = getFilteredAlternatives(mealType, { 
+      name: child.child_name, 
+      age: child.age,
+      preferences: [], // We don't have this in the result, so assuming empty
+      allergies: [] // We don't have this in the result, so assuming empty
+    }, currentMeal);
+    
+    return (
+      <Dialog open={!!editingMeal} onClose={handleCancelEdit} maxWidth="md" fullWidth>
+        <DialogTitle>
+          Replace {mealType.charAt(0).toUpperCase() + mealType.slice(1)} for {child.child_name} on {day}
+        </DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="subtitle1" gutterBottom>
+            Current {mealType}:
+          </Typography>
+          <Paper elevation={2} sx={{ p: 2, mb: 3, bgcolor: "#f8f9fa" }}>
+            <Typography variant="subtitle2">{currentMeal.name}</Typography>
+            <Typography variant="body2" color="text.secondary">{currentMeal.description}</Typography>
+            {currentMeal.nutritional_info && (
+              <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                {currentMeal.nutritional_info.calories} calories | Prep: {currentMeal.prep_time}
+              </Typography>
+            )}
+            {currentMeal.allergens && currentMeal.allergens.length > 0 && (
+              <Typography variant="caption" display="block" color="error">
+                Contains: {currentMeal.allergens.join(', ')}
+              </Typography>
+            )}
+          </Paper>
+          
+          <Typography variant="subtitle1" gutterBottom>
+            Recommended alternatives:
+          </Typography>
+          
+          <Grid container spacing={2}>
+            {alternatives.length > 0 ? (
+              alternatives.map((meal, idx) => (
+                <Grid item xs={12} sm={6} key={idx}>
+                  <Paper 
+                    elevation={1} 
+                    sx={{ 
+                      p: 2, 
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        bgcolor: '#f0f7ff',
+                        transform: 'translateY(-2px)',
+                        boxShadow: 3
+                      }
+                    }}
+                    onClick={() => handleSaveEdit(childIndex, day, mealType, meal)}
+                  >
+                    <Typography variant="subtitle2">{meal.name}</Typography>
+                    <Typography variant="body2" color="text.secondary">{meal.description}</Typography>
+                    {meal.nutritional_info && (
+                      <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                        {meal.nutritional_info.calories} calories | Prep: {meal.prep_time}
+                      </Typography>
+                    )}
+                    {meal.allergens && meal.allergens.length > 0 && (
+                      <Typography variant="caption" display="block" color="error">
+                        Contains: {meal.allergens.join(', ')}
+                      </Typography>
+                    )}
+                  </Paper>
+                </Grid>
+              ))
+            ) : (
+              <Grid item xs={12}>
+                <Paper elevation={0} sx={{ p: 2, bgcolor: '#fff9c4' }}>
+                  <Typography>
+                    No alternatives found that match the dietary preferences and allergies.
+                    Try the randomize option instead.
+                  </Typography>
+                </Paper>
+              </Grid>
+            )}
+          </Grid>
+          
+          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+            <Button 
+              variant="outlined" 
+              color="secondary"
+              startIcon={<RotateCw size={18} />}
+              onClick={() => {
+                handleCancelEdit();
+                handleRandomizeMeal(childIndex, day, mealType);
+              }}
+              sx={{ mx: 1 }}
+            >
+              Randomize
+            </Button>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelEdit}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
+    );
+  };
+
+  // Update the rendering of the meal plan to include edit buttons
+  // In the existing code where you render daily meals, add edit buttons to each meal component:
+
+  // Function to render a meal item with edit button
+  const renderMealItem = (childIndex: number, day: string, mealType: keyof DailyLunch, item: LunchItem) => {
+    return (
+      <Box sx={{ 
+        flexBasis: { xs: '100%', sm: '45%' },
+        position: 'relative', 
+        pb: 1,
+        '&:hover .edit-button': {
+          opacity: 1
+        }
+      }}>
+        <IconButton 
+          size="small" 
+          className="edit-button"
+          onClick={() => handleEditMeal(childIndex, day, mealType)}
+          sx={{ 
+            position: 'absolute', 
+            right: 0, 
+            top: 0, 
+            opacity: 0,
+            transition: 'opacity 0.2s',
+            bgcolor: 'background.paper',
+            '&:hover': {
+              bgcolor: 'action.hover'
+            }
+          }}
+        >
+          <Edit2 size={14} />
+        </IconButton>
+        
+        <Typography variant="body2" sx={{ fontWeight: 'bold', pr: 4 }}>
+          {mealType.charAt(0).toUpperCase() + mealType.slice(1)}: {item.name}
+        </Typography>
+        <Typography variant="caption" display="block">
+          {item.description}
+        </Typography>
+      </Box>
+    );
+  };
+
+  // Update the renderResults function to use the renderMealItem function
+  const renderResults = () => {
+    if (!lunchboxPlan) return null;
+    
+    return (
+      <Box sx={{ mt: 4 }}>
+        <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+          <Typography variant="h5" sx={{ mb: 3, color: 'success.main' }}>
+            Lunchbox Plan Generated Successfully!
+          </Typography>
+          
+          {lunchboxPlan.children.map((child, childIndex) => (
+            <Box key={childIndex} sx={{ mb: 4 }}>
+              <Typography variant="h6" gutterBottom>
+                Meal Plan for {child.child_name} (Age {child.age})
+              </Typography>
+              
+              {Object.entries(child.daily_lunches).map(([day, meals]) => (
+                <Box key={day} sx={{ mb: 3, p: 2, bgcolor: 'background.paper', borderRadius: 1, boxShadow: 1 }}>
+                  <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold' }}>
+                    {day}
+                  </Typography>
+                  
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                    {(Object.keys(meals) as Array<keyof DailyLunch>).map(mealType => 
+                      renderMealItem(childIndex, day, mealType, meals[mealType])
+                    )}
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          ))}
+
+          {/* Grocery List Section */}
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h6" gutterBottom>
+              Grocery List
+            </Typography>
+            {lunchboxPlan.grocery_list && Object.entries(lunchboxPlan.grocery_list).map(([category, items]) => (
+              <Box key={category} sx={{ mb: 2 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                  {category}
+                </Typography>
+                <ul style={{ margin: 0 }}>
+                  {items.map((item, idx) => (
+                    <li key={idx}>{item}</li>
+                  ))}
+                </ul>
+              </Box>
+            ))}
+          </Box>
+        </Paper>
+      </Box>
+    );
+  };
+
+  // Add back the renderInputForm function that was accidentally removed
   const renderInputForm = () => (
     <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
       <Stack direction="row" spacing={2} alignItems="center" mb={3}>
@@ -626,188 +1244,14 @@ export default function LunchboxPlannerPage() {
       {activeTab === 0 && renderInputForm()}
       
       {activeTab === 1 && lunchboxPlan && (
-        <Box sx={{ mt: 4 }}>
-          <Typography variant="h5" gutterBottom>
-            Lunchbox Plan Generated Successfully!
-          </Typography>
-          
-          {/* Child's Meal Plan */}
-          {lunchboxPlan.children.map((child, childIndex) => (
-            <Box 
-              key={childIndex} 
-              sx={{ 
-                mt: 3, 
-                p: 3, 
-                border: '1px solid #e0e0e0', 
-                borderRadius: 2,
-                bgcolor: 'background.paper'
-              }}
-            >
-              <Typography variant="h6" gutterBottom>
-                Meal Plan for {child.child_name} ({child.age} years old)
-              </Typography>
-              
-              {/* Days of Week */}
-              {Object.entries(child.daily_lunches).map(([day, lunch]) => (
-                <Box 
-                  key={day} 
-                  sx={{ 
-                    mt: 2, 
-                    p: 2, 
-                    border: '1px solid #f0f0f0', 
-                    borderRadius: 1,
-                    bgcolor: '#fafafa'
-                  }}
-                >
-                  <Typography 
-                    variant="subtitle1" 
-                    sx={{ 
-                      fontWeight: 'bold',
-                      color: 'primary.main',
-                      mb: 1
-                    }}
-                  >
-                    {day}
-                  </Typography>
-                  
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                    {/* Main */}
-                    <Box sx={{ flexBasis: '100%', mb: 1 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                        Main: {lunch.main.name}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {lunch.main.description}
-                      </Typography>
-                      {lunch.main.nutritional_info && (
-                        <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
-                          {lunch.main.nutritional_info.calories} calories | Prep: {lunch.main.prep_time}
-                        </Typography>
-                      )}
-                    </Box>
-                    
-                    {/* Side Items */}
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, width: '100%' }}>
-                      {/* Fruit */}
-                      <Box sx={{ flexBasis: { xs: '100%', sm: '45%' } }}>
-                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                          Fruit: {lunch.fruit.name}
-                        </Typography>
-                        <Typography variant="caption" display="block">
-                          {lunch.fruit.description}
-                        </Typography>
-                      </Box>
-                      
-                      {/* Vegetable */}
-                      <Box sx={{ flexBasis: { xs: '100%', sm: '45%' } }}>
-                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                          Vegetable: {lunch.vegetable.name}
-                        </Typography>
-                        <Typography variant="caption" display="block">
-                          {lunch.vegetable.description}
-                        </Typography>
-                      </Box>
-                      
-                      {/* Snack */}
-                      <Box sx={{ flexBasis: { xs: '100%', sm: '45%' } }}>
-                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                          Snack: {lunch.snack.name}
-                        </Typography>
-                        <Typography variant="caption" display="block">
-                          {lunch.snack.description}
-                        </Typography>
-                      </Box>
-                      
-                      {/* Drink */}
-                      <Box sx={{ flexBasis: { xs: '100%', sm: '45%' } }}>
-                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                          Drink: {lunch.drink.name}
-                        </Typography>
-                        <Typography variant="caption" display="block">
-                          {lunch.drink.description}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    
-                    {/* Nutritional Summary */}
-                    <Box 
-                      sx={{ 
-                        width: '100%', 
-                        mt: 1, 
-                        p: 1, 
-                        bgcolor: '#f0f7ff', 
-                        borderRadius: 1,
-                        fontSize: '0.75rem'
-                      }}
-                    >
-                      <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
-                        Nutritional Summary:
-                      </Typography> Approximately {
-                        (lunch.main.nutritional_info?.calories || 0) +
-                        (lunch.fruit.nutritional_info?.calories || 0) +
-                        (lunch.vegetable.nutritional_info?.calories || 0) +
-                        (lunch.snack.nutritional_info?.calories || 0) +
-                        (lunch.drink.nutritional_info?.calories || 0)
-                      } calories
-                    </Box>
-                  </Box>
-                </Box>
-              ))}
-            </Box>
-          ))}
-          
-          {/* Grocery List */}
-          <Box 
-            sx={{ 
-              mt: 4, 
-              p: 3, 
-              border: '1px solid #e0e0e0', 
-              borderRadius: 2,
-              bgcolor: '#f9f9f9'
-            }}
-          >
-            <Typography variant="h6" gutterBottom>
-              Grocery List
-            </Typography>
-            
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-              {Object.entries(lunchboxPlan.grocery_list).map(([category, items]) => (
-                <Box 
-                  key={category} 
-                  sx={{ 
-                    flexBasis: { xs: '100%', sm: '45%', md: '30%' },
-                    p: 2,
-                    bgcolor: 'white',
-                    border: '1px solid #eaeaea',
-                    borderRadius: 1
-                  }}
-                >
-                  <Typography variant="subtitle2" color="primary.main" gutterBottom>
-                    {category}
-                  </Typography>
-                  
-                  <Box component="ul" sx={{ m: 0, pl: 2 }}>
-                    {items.map((item, index) => (
-                      <Typography component="li" key={index} variant="body2">
-                        {item}
-                      </Typography>
-                    ))}
-                  </Box>
-                </Box>
-              ))}
-            </Box>
-          </Box>
-          
-          <Box sx={{ mt: 3, mb: 2 }}>
-            <Button 
-              variant="outlined" 
-              onClick={() => setActiveTab(0)}
-            >
-              Plan Another Week
-            </Button>
-          </Box>
-        </Box>
+        renderResults()
       )}
+      
+      {/* Add the meal edit dialog */}
+      {renderMealEditDialog()}
+      
+      {/* Testing and API Results */}
+      {isLoading && <Typography>Generating your meal plan...</Typography>}
     </Container>
   );
 } 

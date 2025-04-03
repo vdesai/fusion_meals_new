@@ -4,16 +4,21 @@ import React from 'react';
 import Link from 'next/link';
 import { Star, Smile, Users } from 'lucide-react';
 
+export const metadata = {
+  title: 'About Us | Fusion Meals',
+  description: 'Learn how Fusion Meals started and our mission to bring diverse, family-friendly meals to your table.'
+};
+
 const AboutPage = () => {
   return (
     <div>
       <main className="p-8 max-w-5xl mx-auto">
         <section className="bg-green-100 dark:bg-gray-800 rounded-lg p-8 shadow-lg transition-all duration-300">
           <h1 className="text-4xl font-extrabold text-green-700 dark:text-green-300 mb-4 text-center">
-            🌟 Our Story
+            Our Story
           </h1>
           <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-            Fusion Meals began with a simple idea—bringing diverse flavors together for busy families. As a parent, I wanted my daughter to enjoy meals that were not just healthy but also exciting. With inspiration from cuisines worldwide, I envisioned a place where anyone could generate personalized recipes and meal plans in seconds. Whether you have dietary restrictions, picky eaters, or an adventurous palate, Fusion Meals has something special for you.
+            Fusion Meals began with a simple idea&mdash;bringing diverse flavors together for busy families. As a parent, I wanted my daughter to enjoy meals that were not just healthy but also exciting. With inspiration from cuisines worldwide, I envisioned a place where anyone could generate personalized recipes and meal plans in seconds. Whether you have dietary restrictions, picky eaters, or an adventurous palate, Fusion Meals has something special for you.
           </p>
         </section>
 

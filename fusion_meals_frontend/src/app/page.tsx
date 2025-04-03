@@ -320,8 +320,14 @@ const HomePage = () => {
           <div className="container mx-auto px-4">
             <h2 className="text-3xl font-bold mb-6">About Us</h2>
             <p className="text-lg text-gray-600 dark:text-gray-300">
-              Fusion Meals is dedicated to bringing delicious diversity to your plate. Our mission is to blend culinary traditions, adapt recipes to your dietary needs, and create unique meals that tell your story. Let AI guide your cooking adventure.
+              Fusion Meals began with a simple idea&mdash;bringing diverse flavors together for busy families. Our mission is to blend culinary traditions, adapt recipes to your dietary needs, and create unique meals that tell your story. Whether you have dietary restrictions, picky eaters, or an adventurous palate, we&apos;re here to make your cooking journey exciting and accessible.
             </p>
+            <Link
+              href="/about"
+              className="inline-block mt-4 text-blue-600 hover:text-blue-800 font-medium"
+            >
+              Read our full story →
+            </Link>
           </div>
         </section>
 
@@ -384,9 +390,9 @@ const HomePage = () => {
 
           <div className="bg-white dark:bg-gray-700 rounded-lg p-6 shadow-md text-center transition-all duration-300">
             <Info size={40} className="text-pink-500 mx-auto mb-3" />
-            <h3 className="font-semibold text-xl text-green-600 dark:text-green-300 mb-2">About Us</h3>
+            <h3 className="font-semibold text-xl text-green-600 dark:text-green-300 mb-2">Our Story</h3>
             <p className="text-gray-600 dark:text-gray-300">
-              Learn the story behind Fusion Meals and how it brings delicious diversity to your plate.
+              Learn how Fusion Meals started and our mission to bring diverse, family-friendly meals to your table.
             </p>
           </div>
         </section>
